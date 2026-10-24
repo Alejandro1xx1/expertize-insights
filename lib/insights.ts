@@ -63,7 +63,8 @@ export async function generarInsights(
 
 Reglas estrictas:
 - Usa SOLO los datos de los productos y del mercado entregados. NUNCA inventes precios, cifras ni características. Si un dato no está, dilo como "Sin dato".
-- "resumen": exactamente 3 frases cortas (una por línea) para un gerente comercial.
+- "resumen": una frase por cada uno de los 3 carros con mayor puntuación (en orden de puntuación, máximo 3), explicando en lenguaje de vendedor por qué ocupa ese puesto para ESTE cliente (presupuesto, uso, precio frente al mercado, kilometraje). Empieza cada frase con el nombre corto del carro.
+- "veredicto": una sola frase final con la recomendación concreta para cerrar la venta.
 - "productos": uno por cada id recibido, con el mismo id.
   - "puntuacion": entero 0–100 según qué tan bien encaja con el contexto del mensaje (presupuesto, uso, perfil). Penaliza datos faltantes clave.
   - "titular": una frase de máximo 14 palabras que venda el carro (ej. "La SUV familiar con más equipamiento por menos de 100 millones").
@@ -109,6 +110,7 @@ ${mercadoParaModelo(mercado)}`,
 
   return {
     resumen: data.resumen.slice(0, 3),
+    veredicto: data.veredicto,
     productos: productosInsight,
     preguntasCliente: data.preguntasCliente,
   };

@@ -1,3 +1,4 @@
+import { revisarCarro } from "./coherencia";
 import { obtenerPistas, type Pistas } from "./hints";
 import { ExtraccionSchema, type Extraccion, type Producto } from "./schemas";
 import { parseStructured, runWithTools, validateOrRepair, WEB_FETCH, type ToolActivity } from "./claude";
@@ -9,13 +10,15 @@ const REGLAS = `Reglas estrictas:
 - "precio": número sin separadores (ej. 98000000) SOLO si el precio aparece explícito. "precioTexto": el precio copiado tal cual aparece (ej. "$98.000.000"). Si no hay precio, ambos null.
 - "moneda": código ISO (COP, USD…) deducido del sitio; null si no se puede saber.
 - "imagenes": URLs absolutas de fotos del producto que aparezcan en la página o en las pistas (máximo 6). Nunca construyas ni adivines URLs.
+- "condicion": "nuevo" si la página vende el carro 0 km o es un lanzamiento/lista de precios de concesionario oficial; "usado" si tiene recorrido; null si no se puede saber.
+- "Kilometraje" es OBLIGATORIO en atributos cuando se conozca: "0 km" para carros nuevos; el valor exacto para usados. Si de verdad no aparece, no lo inventes.
 - "nombre": marca, modelo, versión y año si aparecen (ej. "Mazda CX-30 Touring 2022").
 - "atributos": pares clave/valor cortos para comparar carros. Usa EXACTAMENTE estas claves cuando el dato exista: Año, Kilometraje, Motor, Potencia, Transmisión, Combustible, Tracción, Carrocería, Color, Puertas, Airbags, Ubicación, Placa, Único dueño, Garantía. Puedes agregar otras relevantes (ej. Consumo, Equipamiento destacado). Valores cortos con unidades (ej. "45.000 km", "2.0 L", "Automática").
 - "enlace": URL exacta del producto si se conoce (en catálogos, el enlace de cada ítem); si no, null.
 - Si la fuente es un catálogo o listado, "tipo": "catalogo" y extrae hasta ${MAX_POR_FUENTE} productos. Si es una ficha individual, "tipo": "producto". Si no hay productos, "tipo": "sin_productos" y explica en "nota".`;
 
 const FORMATO = `Responde ÚNICAMENTE con un bloque \`\`\`json con esta forma exacta:
-{"tipo":"producto|catalogo|sin_productos","productos":[{"nombre":string,"precio":number|null,"moneda":string|null,"precioTexto":string|null,"imagenes":string[],"atributos":[{"clave":string,"valor":string}],"enlace":string|null}],"nota":string|null}`;
+{"tipo":"producto|catalogo|sin_productos","productos":[{"nombre":string,"precio":number|null,"moneda":string|null,"precioTexto":string|null,"imagenes":string[],"atributos":[{"clave":string,"valor":string}],"enlace":string|null,"condicion":"nuevo"|"usado"|null}],"nota":string|null}`;
 
 type Contexto = { ciudad: string; mensaje: string };
 
@@ -84,16 +87,22 @@ function sanear(
       precio = null;
       precioTexto = null;
     }
-    return {
-      nombre: p.nombre.trim() || "Sin nombre",
-      precio,
-      moneda: p.moneda,
-      precioTexto,
-      imagenes,
-      atributos: p.atributos.filter((a) => a.clave.trim() && a.valor.trim()).slice(0, 14),
-      enlace: p.enlace && /^https?:\/\//i.test(p.enlace) ? p.enlace : fuente.url,
-      fuente,
-    };
+    const { carro, alertas } = revisarCarro(
+      {
+        nombre: p.nombre.trim() || "Sin nombre",
+        precio,
+        moneda: p.moneda,
+        precioTexto,
+        imagenes,
+        atributos: p.atributos.filter((a) => a.clave.trim() && a.valor.trim()).slice(0, 16),
+        enlace: p.enlace && /^https?:\/\//i.test(p.enlace) ? p.enlace : fuente.url,
+        fuente,
+        alertas: [],
+      },
+      p.condicion ?? null,
+    );
+    for (const a of alertas) avisos.push(`${carro.nombre}: ${a}`);
+    return carro;
   });
 }
 

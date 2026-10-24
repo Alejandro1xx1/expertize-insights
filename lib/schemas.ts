@@ -20,6 +20,7 @@ export const ProductoExtraidoSchema = z.object({
   imagenes: z.array(z.string()),
   atributos: z.array(AtributoSchema),
   enlace: z.string().nullable(),
+  condicion: z.enum(["nuevo", "usado"]).nullable().optional(),
 });
 
 export const ExtraccionSchema = z.object({
@@ -41,6 +42,8 @@ export type Producto = {
   atributos: { clave: string; valor: string }[];
   /** Enlace exacto del producto (puede ser distinto al de la fuente si venía de un catálogo). */
   enlace: string | null;
+  /** Avisos de coherencia detectados al revisar los datos (ej. kilometraje alto para el año). */
+  alertas: string[];
   fuente: {
     tipo: "enlace" | "texto" | "archivo";
     /** Número de la fuente tal como la escribió el usuario (Enlace 1, Enlace 2…). */
@@ -83,6 +86,7 @@ export type Mercado = MercadoModelo & {
 
 export const InsightsSchema = z.object({
   resumen: z.array(z.string()),
+  veredicto: z.string(),
   productos: z.array(
     z.object({
       id: z.string(),
@@ -137,6 +141,7 @@ export type InsightProducto = InsightsModelo["productos"][number] & {
 
 export type Insights = {
   resumen: string[];
+  veredicto: string;
   productos: InsightProducto[];
   preguntasCliente: InsightsModelo["preguntasCliente"];
 };

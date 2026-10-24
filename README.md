@@ -46,13 +46,30 @@ Herramienta de ventas de **carros** para usar **en vivo frente a prospectos** (c
 - **Comparador frente a frente:** eliges hasta 4 modelos con chips (+ Añadir modelo / ✕) y ves el radar superpuesto (hasta 3) y una tabla con el mejor valor de cada fila en verde.
 - Todas las gráficas se animan al entrar en pantalla y muestran el detalle al pasar el mouse.
 
-### Foto de portada
-La portada muestra una foto real de un carro. Para usar **tu propia foto** (recomendado, por ejemplo una de tu concesionario o de un banco de imágenes con licencia comercial como Unsplash o Pexels):
-1. Nómbrala exactamente `hero.jpg` (horizontal, ideal 2400 px de ancho, el carro hacia la derecha).
-2. En GitHub, entra a la carpeta `public`, presiona **Add file → Upload files**, súbela y presiona **Commit changes**.
-3. Vercel la publica solo en 1–2 minutos.
+### Portada con carro real (video, GIF o foto)
+La portada muestra un carro real en movimiento. Sube **uno** de estos archivos a la carpeta `public` del repositorio (GitHub → carpeta `public` → **Add file → Upload files** → **Commit changes**):
 
-Si no hay `hero.jpg`, la app intenta cargar fotos de Unsplash; si tampoco cargan, muestra la escena animada del carro.
+| Archivo | Qué es | Recomendación |
+|---|---|---|
+| `hero.mp4` | Video corto en bucle, sin sonido | **El mejor**: se ve más fluido y pesa menos que un GIF. 5–10 s, horizontal, menos de 8 MB. |
+| `hero.gif` | GIF animado | Funciona, pero pesa más; ideal menos de 6 MB. |
+| `hero.jpg` | Foto fija | Se anima con un zoom lento. |
+
+Dónde conseguirlo con licencia para uso comercial: **Pexels Videos** o **Pixabay Videos** (busca "luxury car", "car night", "car driving") o un video de tu propio concesionario. Pon el carro hacia la derecha: a la izquierda va el texto.
+
+La app busca en orden `hero.mp4` → `hero.gif` → `hero.jpg` → fotos de Unsplash → escena animada del carro, y usa la primera que encuentre.
+
+### Resultados
+1. **#1 en el escenario oscuro:** foto grande, precio, puntuación, kilometraje y por qué es el mejor.
+2. **🏁 Podio (Top 3)** en tarjetas: foto, precio, año, **kilometraje (siempre: "0 km" si es nuevo o "Sin dato" si la fuente no lo dice)**, transmisión e insights clave (✨ titular, ✅ ventajas, ⚠️ a tener en cuenta).
+3. **🧭 Resumen ejecutivo:** por qué cada carro del top 3 quedó en su puesto y un 💡 veredicto para cerrar la venta.
+4. **🚗 El resto de la vitrina** en orden de puntaje.
+5. **🔬 Análisis a fondo** en pestañas: 📊 Gráficas, ⚖️ Comparar, 📈 Mercado y 💬 Preguntas del cliente.
+
+Al hacer clic en cualquier tarjeta se abre la **vista previa**: carrusel de fotos (flechas, puntos, miniaturas, teclado o deslizando con el dedo), datos, insights, especificaciones, radar y botones para pasar al carro anterior o siguiente.
+
+### Coherencia de los datos
+Antes de mostrar un carro, la app revisa y corrige: año válido, kilometraje lógico (y que cuadre con el año), precio dentro de un rango razonable ("98 millones" → $98.000.000), nombres de campos estándar y carros duplicados entre fuentes. Lo que no cuadra se marca con 🔎 "Datos a revisar" en la vista previa.
 
 ### Pantallas
 | Ruta | Para qué |

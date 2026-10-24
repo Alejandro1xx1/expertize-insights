@@ -23,13 +23,14 @@ const CIUDADES = ["Medellín", "Bogotá", "Cali", "Barranquilla"];
 
 // Atajos para describir al cliente rápido durante la reunión.
 const PERFILES = [
-  "Familia con hijos",
-  "Primer carro",
-  "Ejecutivo",
-  "Busca lujo",
-  "Trabaja con el carro",
-  "Prioriza bajo consumo",
-  "Quiere financiar",
+  { e: "👨‍👩‍👧", t: "Familia con hijos" },
+  { e: "🔑", t: "Primer carro" },
+  { e: "💼", t: "Ejecutivo" },
+  { e: "💎", t: "Busca lujo" },
+  { e: "🛠️", t: "Trabaja con el carro" },
+  { e: "⛽", t: "Prioriza bajo consumo" },
+  { e: "🏦", t: "Quiere financiar" },
+  { e: "🔋", t: "Prefiere híbrido o eléctrico" },
 ];
 
 async function archivoACsv(file: File): Promise<{ csv: string; filas: number }> {
@@ -193,11 +194,11 @@ export default function FormularioEntrada({
           {PERFILES.map((p) => (
             <button
               type="button"
-              key={p}
-              onClick={() => agregarPerfil(p)}
+              key={p.t}
+              onClick={() => agregarPerfil(p.t)}
               className="rounded-full border border-linea bg-white px-3 py-1.5 text-sm text-tinta transition-colors hover:border-tinta"
             >
-              + {p}
+              {p.e} {p.t}
             </button>
           ))}
         </div>

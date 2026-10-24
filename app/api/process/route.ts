@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import { describeError, getClient, type ToolActivity } from "@/lib/claude";
 import { extraerDeEnlace, extraerDeFilas, extraerDeTexto, type ResultadoFuente } from "@/lib/extract";
 import { urlValida } from "@/lib/hints";
+import { claveDuplicado } from "@/lib/coherencia";
 import { formatoMoneda } from "@/lib/format";
 import { generarComparador, generarInsights } from "@/lib/insights";
 import { obtenerMercado } from "@/lib/market";
@@ -106,6 +107,7 @@ export async function POST(req: Request) {
 
       /* ── Productos ── */
       const productos: Producto[] = [];
+      const vistos = new Set<string>();
       const motivosFallo: string[] = [];
       const publicar = (r: ResultadoFuente, etiqueta: string) => {
         for (const aviso of r.avisos) log(`${etiqueta}: ${aviso}`, "warn");
@@ -118,6 +120,12 @@ export async function POST(req: Request) {
             log(`Se alcanzó el máximo de ${MAX_PRODUCTOS} productos; el resto se omite.`, "warn");
             break;
           }
+          const clave = claveDuplicado(p);
+          if (vistos.has(clave)) {
+            log(`${etiqueta}: "${p.nombre}" ya estaba en la lista; se omite el duplicado.`, "warn");
+            continue;
+          }
+          vistos.add(clave);
           const producto: Producto = { ...p, id: `p${productos.length + 1}` };
           productos.push(producto);
           const precio = producto.precio !== null ? formatoMoneda(producto.precio, producto.moneda) : "precio sin dato";
