@@ -239,7 +239,16 @@ export function describeError(err: unknown): string {
   if (err instanceof Anthropic.AuthenticationError) return "La ANTHROPIC_API_KEY no es válida.";
   if (err instanceof Anthropic.RateLimitError) return "Límite de uso de la API alcanzado; intenta en un minuto.";
   if (err instanceof Anthropic.APIConnectionTimeoutError) return "La API tardó demasiado en responder.";
-  if (err instanceof Anthropic.APIError) return `Error de la API (${err.status ?? "?"}).`;
+  if (err instanceof Anthropic.PermissionDeniedError) return "La API key de Anthropic no tiene permiso para este modelo o herramienta.";
+  if (err instanceof Anthropic.APIError) {
+    if (/credit balance/i.test(err.message)) {
+      return "La cuenta de Anthropic no tiene saldo. Carga saldo en console.anthropic.com → Billing.";
+    }
+    if (/web (search|fetch).*(not enabled|disabled)|not enabled.*web/i.test(err.message)) {
+      return "La búsqueda/lectura web no está habilitada en tu organización de Anthropic (console.anthropic.com → Settings → Privacy/Web).";
+    }
+    return `Error de la API (${err.status ?? "?"}): ${err.message.slice(0, 160)}`;
+  }
   if (err instanceof Error) {
     if (err.name === "AbortError" || /abort/i.test(err.message)) return "Tiempo de espera agotado.";
     return err.message;

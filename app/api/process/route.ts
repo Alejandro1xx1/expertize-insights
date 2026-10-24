@@ -99,8 +99,10 @@ export async function POST(req: Request) {
 
       /* ── Productos ── */
       const productos: Producto[] = [];
+      const motivosFallo: string[] = [];
       const publicar = (r: ResultadoFuente, etiqueta: string) => {
         for (const aviso of r.avisos) log(`${etiqueta}: ${aviso}`, "warn");
+        if (!r.productos.length && r.avisos.length) motivosFallo.push(`${etiqueta}: ${r.avisos[0]}`);
         for (const p of r.productos) {
           if (productos.length >= MAX_PRODUCTOS) {
             log(`Se alcanzó el máximo de ${MAX_PRODUCTOS} productos; el resto se omite.`, "warn");
@@ -127,6 +129,7 @@ export async function POST(req: Request) {
           if (r.productos.length > 1) log(`Enlace ${n}: catálogo detectado con ${r.productos.length} productos.`, "ok");
           publicar(r, `Enlace ${n}`);
         } catch (err) {
+          motivosFallo.push(`Enlace ${n}: ${describeError(err)}`);
           log(`Enlace ${n} falló: ${describeError(err)} Se continúa con los demás. Puedes usar “Pegar texto manualmente”.`, "error");
         }
       });
@@ -164,7 +167,7 @@ export async function POST(req: Request) {
       if (!productos.length) {
         emit({
           tipo: "error",
-          mensaje: "No se pudo extraer ningún producto. Prueba con “Pegar texto manualmente” o sube el inventario en Excel/CSV.",
+          mensaje: `No se pudo extraer ningún producto.${motivosFallo.length ? ` Motivo: ${motivosFallo.slice(0, 3).join(" · ")}` : ""} Prueba con “Pegar texto manualmente” o sube el inventario en Excel/CSV.`,
         });
         return;
       }

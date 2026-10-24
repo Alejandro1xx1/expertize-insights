@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import { INDUSTRIAS, type IndustriaId } from "@/lib/schemas";
+import CajonesEnlaces from "./CajonesEnlaces";
 
 export type DatosEntrada = {
-  enlaces: string;
+  enlaces: string[];
   mensaje: string;
   industria: IndustriaId;
   ciudad: string;
@@ -13,7 +14,7 @@ export type DatosEntrada = {
 };
 
 export const ENTRADA_VACIA: DatosEntrada = {
-  enlaces: "",
+  enlaces: [""],
   mensaje: "",
   industria: "carros",
   ciudad: "Medellín",
@@ -51,7 +52,7 @@ export default function FormularioEntrada({
   const inputArchivo = useRef<HTMLInputElement>(null);
   const set = (cambios: Partial<DatosEntrada>) => onChange({ ...valor, ...cambios });
 
-  const numEnlaces = valor.enlaces.split("\n").filter((l) => l.trim()).length;
+  const numEnlaces = valor.enlaces.filter((l) => l.trim()).length;
   const listo = numEnlaces > 0 || valor.textoManual.trim().length > 20 || valor.archivo !== null;
 
   async function cargarArchivo(file: File | undefined) {
@@ -76,19 +77,10 @@ export default function FormularioEntrada({
     >
       <div>
         <div className="mb-2 flex items-baseline justify-between">
-          <label htmlFor="enlaces" className="etiqueta">
-            Enlaces de productos o catálogo
-          </label>
-          <span className="font-mono text-xs text-tenue">{numEnlaces} enlace(s) · uno por línea</span>
+          <span className="etiqueta">Enlaces de productos o catálogo</span>
+          <span className="font-mono text-xs text-tenue">{numEnlaces} enlace(s) · uno por cajón</span>
         </div>
-        <textarea
-          id="enlaces"
-          rows={4}
-          className="campo scroll-fino resize-y font-mono text-sm"
-          placeholder={"https://www.concesionario.com/usados/suv-2022\nhttps://www.concesionario.com/usados/sedan-2021"}
-          value={valor.enlaces}
-          onChange={(e) => set({ enlaces: e.target.value })}
-        />
+        <CajonesEnlaces valor={valor.enlaces} onChange={(enlaces) => set({ enlaces })} />
       </div>
 
       <div>

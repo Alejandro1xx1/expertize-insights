@@ -132,7 +132,7 @@ export default function App() {
           headers: { "content-type": "application/json" },
           signal: ctrl.signal,
           body: JSON.stringify({
-            enlaces: entrada.enlaces.split("\n").map((l) => l.trim()).filter(Boolean),
+            enlaces: entrada.enlaces.map((l) => l.trim()).filter(Boolean),
             mensaje: entrada.mensaje,
             industria: entrada.industria,
             ciudad: entrada.ciudad,
@@ -208,14 +208,16 @@ export default function App() {
             {entrada.mensaje && <span className="min-w-0 max-w-full truncate text-tenue sm:max-w-xl">“{entrada.mensaje}”</span>}
             <div className="ml-auto flex items-center gap-2">
               {segundos !== null && <span className="font-mono text-xs text-ok">✓ {segundos} s</span>}
-              <button
-                onClick={() => setVerCliente(true)}
-                disabled={!comparador}
-                className="boton-procesar px-4 py-2 text-sm disabled:opacity-40"
-                title={comparador ? "" : "Disponible cuando terminen los insights"}
-              >
-                {comparador ? "Así lo vería tu cliente →" : "Preparando vista del cliente…"}
-              </button>
+              {(comparador || (procesando && productos.length > 0)) && (
+                <button
+                  onClick={() => setVerCliente(true)}
+                  disabled={!comparador}
+                  className="boton-procesar px-4 py-2 text-sm disabled:opacity-40"
+                  title={comparador ? "" : "Disponible cuando terminen los insights"}
+                >
+                  {comparador ? "Así lo vería tu cliente →" : "Preparando vista del cliente…"}
+                </button>
+              )}
             </div>
           </div>
 
