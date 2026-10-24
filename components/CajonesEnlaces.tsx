@@ -5,6 +5,17 @@ import { dominio } from "@/lib/format";
 
 const MAX = 12;
 
+// Sitios que exigen inicio de sesión o bloquean la lectura automática.
+const BLOQUEAN = /(^|\.)(mercadolibre\.com(\.\w+)?|tucarro\.com\.co|mercadolivre\.com\.br|facebook\.com|instagram\.com)$/i;
+
+function sitioBloqueado(s: string): boolean {
+  try {
+    return BLOQUEAN.test(new URL(s.trim()).hostname);
+  } catch {
+    return false;
+  }
+}
+
 function esUrl(s: string): boolean {
   try {
     const u = new URL(s.trim());
@@ -104,8 +115,12 @@ export default function CajonesEnlaces({ valor, onChange }: { valor: string[]; o
                 className="w-full bg-transparent py-1 font-mono text-sm text-texto outline-none placeholder:font-sans placeholder:text-[#6f7e8a]"
               />
               {lleno && (
-                <div className={`font-mono text-[0.68rem] ${valido ? "text-cian-suave" : "text-peligro"}`}>
-                  {valido ? `✓ ${dominio(enlace)}` : "No parece un enlace válido (debe empezar por https://)"}
+                <div className={`font-mono text-[0.68rem] ${valido ? (sitioBloqueado(enlace) ? "text-oro-claro" : "text-cian-suave") : "text-peligro"}`}>
+                  {!valido
+                    ? "No parece un enlace válido (debe empezar por https://)"
+                    : sitioBloqueado(enlace)
+                      ? `⚠ ${dominio(enlace)} suele bloquear la lectura automática. Si falla, usa “Pegar texto manualmente”.`
+                      : `✓ ${dominio(enlace)}`}
                 </div>
               )}
             </div>

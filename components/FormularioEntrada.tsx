@@ -165,7 +165,7 @@ export default function FormularioEntrada({
           <textarea
             rows={5}
             className="campo entrar mt-3 resize-y text-sm"
-            placeholder="Copia y pega aquí el texto de la página (nombre, precio, características)…"
+            placeholder={"Abre la publicación en otra pestaña, presiona Ctrl+A y Ctrl+C, y pega aquí con Ctrl+V.\nPuedes pegar varias publicaciones seguidas: la app separa cada producto."}
             value={valor.textoManual}
             onChange={(e) => set({ textoManual: e.target.value })}
             aria-label="Texto pegado manualmente"

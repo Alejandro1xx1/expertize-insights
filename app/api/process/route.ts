@@ -102,7 +102,10 @@ export async function POST(req: Request) {
       const motivosFallo: string[] = [];
       const publicar = (r: ResultadoFuente, etiqueta: string) => {
         for (const aviso of r.avisos) log(`${etiqueta}: ${aviso}`, "warn");
-        if (!r.productos.length && r.avisos.length) motivosFallo.push(`${etiqueta}: ${r.avisos[0]}`);
+        if (!r.productos.length && r.avisos.length) {
+          const motivo = r.avisos[0];
+          motivosFallo.push(`${etiqueta}: ${motivo.length > 140 ? `${motivo.slice(0, 140)}…` : motivo}`);
+        }
         for (const p of r.productos) {
           if (productos.length >= MAX_PRODUCTOS) {
             log(`Se alcanzó el máximo de ${MAX_PRODUCTOS} productos; el resto se omite.`, "warn");
