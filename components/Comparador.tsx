@@ -17,7 +17,7 @@ export default function Comparador({ config }: { config: ComparadorConfig }) {
   const [respuestas, setRespuestas] = useState<Respuestas>(inicial);
   const total = config.preguntas.length;
   const resultados = useMemo(() => puntuar(config, respuestas), [config, respuestas]);
-  const brand = config.marca.colorPrincipal || "#00E5FF";
+  const brand = config.marca.colorPrincipal || "#C8102E";
 
   const reiniciar = () => {
     setRespuestas(inicial());
@@ -26,36 +26,36 @@ export default function Comparador({ config }: { config: ComparadorConfig }) {
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border bg-[#0a0d13]/90"
-      style={{ ["--brand" as string]: brand, borderColor: `${brand}40`, boxShadow: `0 0 60px -30px ${brand}` }}
+      className="relative overflow-hidden rounded-[14px] border border-linea bg-white text-tinta shadow-[0_30px_80px_-40px_rgba(0,0,0,.4)]"
+      style={{ ["--brand" as string]: brand }}
     >
-      <header className="flex items-center justify-between gap-3 border-b px-5 py-4" style={{ borderColor: `${brand}26` }}>
+      <header className="flex items-center justify-between gap-3 border-b border-linea px-5 py-4 sm:px-8">
         <div className="flex min-w-0 items-center gap-3">
           {config.marca.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={config.marca.logoUrl} alt={config.marca.nombre} className="h-9 w-auto max-w-32 object-contain" />
           ) : (
             <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-titulo text-lg font-bold text-black"
+              className="cifra flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-lg font-bold text-white"
               style={{ background: brand }}
             >
               {config.marca.nombre.trim().charAt(0).toUpperCase() || "M"}
             </div>
           )}
           <div className="min-w-0">
-            <div className="truncate font-titulo text-lg font-bold">{config.marca.nombre}</div>
-            {config.marca.eslogan && <div className="truncate text-xs text-tenue">{config.marca.eslogan}</div>}
+            <div className="titulo truncate text-base tracking-[0.08em]">{config.marca.nombre}</div>
+            {config.marca.eslogan && <div className="truncate text-xs text-gris">{config.marca.eslogan}</div>}
           </div>
         </div>
         {paso >= 0 && (
-          <button onClick={reiniciar} className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-sm text-tenue hover:text-white">
+          <button onClick={reiniciar} className="shrink-0 rounded-md border border-linea px-3 py-1.5 text-sm text-gris hover:border-tinta hover:text-tinta">
             Empezar de nuevo
           </button>
         )}
       </header>
 
       {paso >= 0 && paso < total && (
-        <div className="h-1 bg-white/5">
+        <div className="h-1 bg-niebla">
           <div className="h-full transition-all duration-500" style={{ width: `${((paso + 1) / total) * 100}%`, background: brand }} />
         </div>
       )}
@@ -63,15 +63,15 @@ export default function Comparador({ config }: { config: ComparadorConfig }) {
       <div className="p-5 sm:p-8">
         {paso === -1 && (
           <div className="entrar mx-auto max-w-xl py-6 text-center">
-            <h2 className="font-titulo text-3xl font-bold sm:text-4xl">{config.titulo}</h2>
-            <p className="mt-3 text-lg text-[#cfd9df]">{config.subtitulo}</p>
-            <p className="mt-2 text-sm text-tenue">
+            <h2 className="titulo text-3xl sm:text-5xl">{config.titulo}</h2>
+            <p className="mt-4 text-lg text-gris">{config.subtitulo}</p>
+            <p className="mt-2 text-sm text-gris">
               {total} preguntas rápidas · {config.catalogo.length} opciones disponibles
             </p>
             <button
               onClick={() => setPaso(0)}
-              className="mt-8 rounded-xl px-8 py-4 font-titulo text-lg font-bold text-black transition-transform hover:-translate-y-0.5"
-              style={{ background: brand, boxShadow: `0 0 30px -6px ${brand}` }}
+              className="etiqueta mt-10 rounded-[10px] px-10 py-5 !text-xs text-white transition-opacity hover:opacity-90"
+              style={{ background: brand }}
             >
               Encontrar mi opción ideal
             </button>
@@ -82,15 +82,15 @@ export default function Comparador({ config }: { config: ComparadorConfig }) {
           const q = config.preguntas[paso];
           return (
             <div key={q.id} className="entrar mx-auto max-w-2xl">
-              <div className="font-mono text-xs uppercase tracking-widest" style={{ color: brand }}>
+              <div className="etiqueta" style={{ color: brand }}>
                 Pregunta {paso + 1} de {total}
               </div>
-              <h3 className="mt-2 font-titulo text-2xl font-bold sm:text-3xl">{q.texto}</h3>
-              {q.ayuda && <p className="mt-2 text-tenue">{q.ayuda}</p>}
+              <h3 className="titulo mt-3 text-2xl sm:text-3xl">{q.texto}</h3>
+              {q.ayuda && <p className="mt-2 text-gris">{q.ayuda}</p>}
 
               {q.tipo === "presupuesto" ? (
                 <div className="mt-8">
-                  <div className="text-center font-titulo text-3xl font-bold sm:text-4xl" style={{ color: brand }}>
+                  <div className="cifra text-center text-4xl font-bold sm:text-5xl">
                     {formatoMoneda(Number(respuestas[q.id] ?? q.max), q.moneda)}
                   </div>
                   <input
@@ -104,13 +104,13 @@ export default function Comparador({ config }: { config: ComparadorConfig }) {
                     style={{ accentColor: brand }}
                     aria-label={q.texto}
                   />
-                  <div className="mt-1 flex justify-between font-mono text-xs text-tenue">
+                  <div className="cifra mt-1 flex justify-between text-xs text-gris">
                     <span>{formatoMoneda(q.min, q.moneda)}</span>
                     <span>{formatoMoneda(q.max, q.moneda)}</span>
                   </div>
                   <button
                     onClick={() => setPaso(paso + 1)}
-                    className="mt-8 w-full rounded-xl py-3.5 font-titulo font-bold text-black"
+                    className="etiqueta mt-8 w-full rounded-[10px] py-4 !text-xs text-white"
                     style={{ background: brand }}
                   >
                     Continuar
@@ -127,10 +127,10 @@ export default function Comparador({ config }: { config: ComparadorConfig }) {
                           setRespuestas((r) => ({ ...r, [q.id]: o.id }));
                           setTimeout(() => setPaso((p) => p + 1), 180);
                         }}
-                        className="rounded-xl border px-5 py-4 text-left text-base font-medium transition-all hover:-translate-y-0.5"
+                        className="rounded-[10px] border px-5 py-4 text-left text-base font-medium transition-colors"
                         style={{
-                          borderColor: activa ? brand : "rgba(255,255,255,.12)",
-                          background: activa ? `${brand}22` : "rgba(255,255,255,.03)",
+                          borderColor: activa ? brand : "#e2e2de",
+                          background: activa ? `${brand}12` : "#fff",
                         }}
                       >
                         {o.etiqueta}
@@ -140,7 +140,7 @@ export default function Comparador({ config }: { config: ComparadorConfig }) {
                 </div>
               )}
               {paso > 0 && (
-                <button onClick={() => setPaso(paso - 1)} className="mt-5 text-sm text-tenue hover:text-white">
+                <button onClick={() => setPaso(paso - 1)} className="mt-5 text-sm text-gris hover:text-tinta">
                   ← Anterior
                 </button>
               )}
@@ -151,57 +151,57 @@ export default function Comparador({ config }: { config: ComparadorConfig }) {
         {paso >= total && (
           <div className="entrar space-y-8">
             <div className="text-center">
-              <div className="font-mono text-xs uppercase tracking-widest" style={{ color: brand }}>
+              <div className="etiqueta" style={{ color: brand }}>
                 Tus resultados
               </div>
-              <h3 className="mt-2 font-titulo text-2xl font-bold sm:text-3xl">Estas son tus mejores opciones</h3>
+              <h3 className="titulo mt-3 text-2xl sm:text-4xl">Tus mejores opciones</h3>
             </div>
 
             <ol className="space-y-4">
               {resultados.map((r, i) => (
                 <li
                   key={r.producto.id}
-                  className="entrar flex flex-col gap-4 rounded-xl border p-4 sm:flex-row"
+                  className="entrar flex flex-col gap-5 rounded-[12px] border p-4 sm:flex-row"
                   style={{
                     animationDelay: `${i * 80}ms`,
-                    borderColor: i === 0 ? brand : "rgba(255,255,255,.1)",
-                    background: i === 0 ? `${brand}12` : "rgba(255,255,255,.02)",
+                    borderColor: i === 0 ? brand : "#e2e2de",
+                    background: "#fff",
                   }}
                 >
-                  <FotoProducto imagenes={r.producto.imagenes} alt={r.producto.nombre} sizes="(max-width: 640px) 100vw, 220px" className="aspect-[4/3] w-full shrink-0 rounded-lg sm:w-52" />
+                  <FotoProducto imagenes={r.producto.imagenes} alt={r.producto.nombre} sizes="(max-width: 640px) 100vw, 220px" className="aspect-[16/10] w-full shrink-0 rounded-[10px] sm:w-60" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         {i === 0 && (
-                          <span className="mb-1 inline-block rounded-full px-2 py-0.5 text-xs font-bold text-black" style={{ background: brand }}>
+                          <span className="etiqueta mb-2 inline-block rounded px-2 py-1 !text-[0.58rem] text-white" style={{ background: brand }}>
                             Recomendado para ti
                           </span>
                         )}
-                        <h4 className="font-titulo text-lg font-semibold leading-snug">{r.producto.nombre}</h4>
-                        <div className="mt-1 font-titulo text-xl font-bold" style={{ color: brand }}>
-                          {r.producto.precio !== null ? formatoMoneda(r.producto.precio, r.producto.moneda) : <span className="font-mono text-sm text-tenue">Precio: Sin dato</span>}
+                        <h4 className="cifra text-lg font-semibold leading-snug">{r.producto.nombre}</h4>
+                        <div className="cifra mt-1 text-xl font-bold">
+                          {r.producto.precio !== null ? formatoMoneda(r.producto.precio, r.producto.moneda) : <span className="text-sm font-normal text-gris">Precio: Sin dato</span>}
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
-                        <div className="font-titulo text-3xl font-bold" style={{ color: brand }}>
+                        <div className="cifra text-3xl font-bold" style={{ color: brand }}>
                           {r.puntaje}%
                         </div>
-                        <div className="text-xs text-tenue">coincidencia</div>
+                        <div className="text-xs text-gris">coincidencia</div>
                       </div>
                     </div>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-niebla">
                       <div className="barra-llenado h-full rounded-full" style={{ width: `${r.puntaje}%`, background: brand }} />
                     </div>
                     {r.dentroPresupuesto !== null && (
-                      <div className={`mt-2 text-sm ${r.dentroPresupuesto ? "text-ok" : "text-oro-claro"}`}>
+                      <div className={`mt-2 text-sm ${r.dentroPresupuesto ? "text-verde" : "text-champan-oscuro"}`}>
                         {r.dentroPresupuesto ? "✓ Dentro de tu presupuesto" : "Por encima de tu presupuesto"}
                       </div>
                     )}
-                    {r.producto.idealPara && <p className="mt-2 text-sm text-[#cfd9df]">Ideal para: {r.producto.idealPara}</p>}
+                    {r.producto.idealPara && <p className="mt-2 text-sm text-gris">Ideal para: {r.producto.idealPara}</p>}
                     {r.producto.pros.length > 0 && (
                       <ul className="mt-2 flex flex-wrap gap-2">
                         {r.producto.pros.map((p) => (
-                          <li key={p} className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-[#dfe7ec]">
+                          <li key={p} className="rounded-full bg-niebla px-2.5 py-1 text-xs">
                             {p}
                           </li>
                         ))}
@@ -234,16 +234,16 @@ function ComparacionLadoALado({ resultados, brand }: { resultados: ReturnType<ty
     }
   return (
     <div>
-      <h4 className="mb-3 font-titulo text-xl font-bold">Compáralos lado a lado</h4>
-      <div className="scroll-fino overflow-x-auto rounded-xl border border-white/10">
+      <h4 className="titulo mb-4 text-xl">Compáralos lado a lado</h4>
+      <div className="scroll-fino overflow-x-auto rounded-[12px] border border-linea">
         <table className="w-full min-w-max text-sm">
           <thead>
             <tr>
-              <th className="sticky left-0 bg-[#0d1118] p-3" />
+              <th className="sticky left-0 bg-white p-3" />
               {resultados.map((r) => (
                 <th key={r.producto.id} className="w-56 min-w-48 p-3 text-left font-normal">
                   <FotoProducto imagenes={r.producto.imagenes} alt={r.producto.nombre} sizes="220px" className="mb-2 aspect-[4/3] w-full rounded-lg" />
-                  <div className="font-titulo font-semibold leading-snug">{r.producto.nombre}</div>
+                  <div className="cifra font-semibold leading-snug">{r.producto.nombre}</div>
                   <div className="font-bold" style={{ color: brand }}>
                     {r.puntaje}% coincidencia
                   </div>
@@ -252,20 +252,20 @@ function ComparacionLadoALado({ resultados, brand }: { resultados: ReturnType<ty
             </tr>
           </thead>
           <tbody>
-            <tr className="border-t border-white/10">
-              <th className="sticky left-0 bg-[#0d1118] p-3 text-left text-xs font-medium uppercase tracking-wider text-tenue">Precio</th>
+            <tr className="border-t border-linea">
+              <th className="sticky left-0 bg-white p-3 text-left text-xs font-semibold text-gris">Precio</th>
               {resultados.map((r) => (
                 <td key={r.producto.id} className="p-3 font-semibold">
-                  {r.producto.precio !== null ? formatoMoneda(r.producto.precio, r.producto.moneda) : <span className="text-tenue">Sin dato</span>}
+                  {r.producto.precio !== null ? formatoMoneda(r.producto.precio, r.producto.moneda) : <span className="text-gris">Sin dato</span>}
                 </td>
               ))}
             </tr>
             {claves.slice(0, 12).map((k) => (
-              <tr key={k} className="border-t border-white/10">
-                <th className="sticky left-0 bg-[#0d1118] p-3 text-left text-xs font-medium uppercase tracking-wider text-tenue">{etiquetas.get(k)}</th>
+              <tr key={k} className="border-t border-linea">
+                <th className="sticky left-0 bg-white p-3 text-left text-xs font-semibold text-gris">{etiquetas.get(k)}</th>
                 {resultados.map((r) => (
                   <td key={r.producto.id} className="max-w-56 p-3">
-                    {r.producto.atributos.find((a) => norm(a.clave) === k)?.valor ?? <span className="text-tenue">Sin dato</span>}
+                    {r.producto.atributos.find((a) => norm(a.clave) === k)?.valor ?? <span className="text-gris">Sin dato</span>}
                   </td>
                 ))}
               </tr>

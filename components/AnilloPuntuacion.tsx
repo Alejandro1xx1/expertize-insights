@@ -3,16 +3,15 @@
 import { useEffect, useState } from "react";
 
 export function colorPuntuacion(v: number): string {
-  if (v >= 80) return "#D4A017";
-  if (v >= 60) return "#00E5FF";
-  if (v >= 40) return "#7DA9B8";
-  return "#FF6B7A";
+  if (v >= 75) return "#1F7A45";
+  if (v >= 50) return "#111214";
+  return "#C8102E";
 }
 
-/** Anillo que se llena animado hasta la puntuación (0–100). Dorado si es alta. */
-export default function AnilloPuntuacion({ valor, tamaño = 84 }: { valor: number | null; tamaño?: number }) {
+/** Anillo que se llena animado hasta la puntuación (0–100). */
+export default function AnilloPuntuacion({ valor, tamaño = 84, oscuro = false }: { valor: number | null; tamaño?: number; oscuro?: boolean }) {
   const [mostrado, setMostrado] = useState(0);
-  const r = 15.5;
+  const r = 16;
   const c = 2 * Math.PI * r;
   const v = valor ?? 0;
 
@@ -29,35 +28,24 @@ export default function AnilloPuntuacion({ valor, tamaño = 84 }: { valor: numbe
     return () => cancelAnimationFrame(raf);
   }, [valor, v]);
 
-  const color = colorPuntuacion(v);
+  const color = oscuro ? (v >= 75 ? "#ffffff" : v >= 50 ? "#d4d6d9" : "#ff5a6e") : colorPuntuacion(v);
   return (
-    <div className="relative shrink-0" style={{ width: tamaño, height: tamaño }}>
+    <div className="relative shrink-0" style={{ width: tamaño, height: tamaño }} title="Puntuación según el contexto del cliente">
       <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-        <circle cx="18" cy="18" r={r} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="3" />
+        <circle cx="18" cy="18" r={r} fill="none" stroke={oscuro ? "rgba(255,255,255,.15)" : "#e8e8e4"} strokeWidth="2.2" />
         {valor !== null && (
-          <circle
-            cx="18"
-            cy="18"
-            r={r}
-            fill="none"
-            stroke={color}
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeDasharray={c}
-            strokeDashoffset={c * (1 - mostrado / 100)}
-            style={{ filter: `drop-shadow(0 0 3px ${color})` }}
-          />
+          <circle cx="18" cy="18" r={r} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - mostrado / 100)} />
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         {valor === null ? (
-          <span className="font-mono text-xs text-tenue">…</span>
+          <span className="text-xs text-gris">–</span>
         ) : (
           <>
-            <span className="font-titulo text-xl font-bold leading-none" style={{ color }}>
+            <span className="cifra text-[1.35em] font-bold leading-none" style={{ color, fontSize: tamaño * 0.28 }}>
               {mostrado}
             </span>
-            <span className="font-mono text-[0.55rem] text-tenue">/100</span>
+            <span className={`etiqueta !text-[0.5rem] !tracking-[0.15em] ${oscuro ? "text-plata" : "text-gris"}`}>puntos</span>
           </>
         )}
       </div>

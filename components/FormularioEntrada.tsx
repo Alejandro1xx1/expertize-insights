@@ -1,13 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { INDUSTRIAS, type IndustriaId } from "@/lib/schemas";
 import CajonesEnlaces from "./CajonesEnlaces";
 
 export type DatosEntrada = {
   enlaces: string[];
   mensaje: string;
-  industria: IndustriaId;
   ciudad: string;
   textoManual: string;
   archivo: { nombre: string; csv: string; filas: number } | null;
@@ -16,11 +14,23 @@ export type DatosEntrada = {
 export const ENTRADA_VACIA: DatosEntrada = {
   enlaces: [""],
   mensaje: "",
-  industria: "carros",
   ciudad: "Medellín",
   textoManual: "",
   archivo: null,
 };
+
+const CIUDADES = ["Medellín", "Bogotá", "Cali", "Barranquilla"];
+
+// Atajos para describir al cliente rápido durante la reunión.
+const PERFILES = [
+  "Familia con hijos",
+  "Primer carro",
+  "Ejecutivo",
+  "Busca lujo",
+  "Trabaja con el carro",
+  "Prioriza bajo consumo",
+  "Quiere financiar",
+];
 
 async function archivoACsv(file: File): Promise<{ csv: string; filas: number }> {
   const Papa = (await import("papaparse")).default;
@@ -36,6 +46,19 @@ async function archivoACsv(file: File): Promise<{ csv: string; filas: number }> 
     .slice(0, 400)
     .map((f) => f.map((c) => (c instanceof Date ? c.toISOString().slice(0, 10) : c === null ? "" : String(c))));
   return { csv: Papa.unparse(datos), filas: Math.max(0, datos.length - 1) };
+}
+
+function Paso({ n, titulo, ayuda, children }: { n: string; titulo: string; ayuda?: string; children: React.ReactNode }) {
+  return (
+    <section className="grid gap-4 border-t border-linea py-7 first:border-t-0 first:pt-0 md:grid-cols-[13rem_1fr] md:gap-8">
+      <div>
+        <div className="cifra text-sm font-bold text-rojo">{n}</div>
+        <h2 className="titulo mt-1 text-lg">{titulo}</h2>
+        {ayuda && <p className="mt-2 text-sm leading-relaxed text-gris">{ayuda}</p>}
+      </div>
+      <div className="min-w-0">{children}</div>
+    </section>
+  );
 }
 
 export default function FormularioEntrada({
@@ -54,6 +77,7 @@ export default function FormularioEntrada({
 
   const numEnlaces = valor.enlaces.filter((l) => l.trim()).length;
   const listo = numEnlaces > 0 || valor.textoManual.trim().length > 20 || valor.archivo !== null;
+  const otraCiudad = !CIUDADES.includes(valor.ciudad);
 
   async function cargarArchivo(file: File | undefined) {
     setErrorArchivo(null);
@@ -67,105 +91,46 @@ export default function FormularioEntrada({
     }
   }
 
+  function agregarPerfil(p: string) {
+    const actual = valor.mensaje.trim();
+    if (actual.toLowerCase().includes(p.toLowerCase())) return;
+    set({ mensaje: actual ? `${actual.replace(/[.\s]+$/, "")}. ${p}.` : `${p}.` });
+  }
+
   return (
     <form
-      className="vidrio entrar mx-auto w-full max-w-3xl space-y-6 p-5 sm:p-8"
+      className="tarjeta entrar w-full p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,.35)] sm:p-10"
       onSubmit={(e) => {
         e.preventDefault();
         if (listo) onProcesar();
       }}
     >
-      <div>
-        <div className="mb-2 flex items-baseline justify-between">
-          <span className="etiqueta">Enlaces de productos o catálogo</span>
-          <span className="font-mono text-xs text-tenue">{numEnlaces} enlace(s) · uno por cajón</span>
-        </div>
+      <Paso n="01" titulo="Los carros" ayuda="Pega el enlace de cada carro o de un catálogo completo. Uno por cajón.">
         <CajonesEnlaces valor={valor.enlaces} onChange={(enlaces) => set({ enlaces })} />
-      </div>
 
-      <div>
-        <label htmlFor="mensaje" className="etiqueta mb-2 block">
-          Contexto del prospecto
-        </label>
-        <textarea
-          id="mensaje"
-          rows={3}
-          className="campo resize-y"
-          placeholder="Ej. Concesionario de usados en Medellín, familias con presupuesto de 60 a 100 millones"
-          value={valor.mensaje}
-          onChange={(e) => set({ mensaje: e.target.value })}
-        />
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-[1fr_14rem]">
-        <fieldset>
-          <legend className="etiqueta mb-2">Industria</legend>
-          <div className="flex flex-wrap gap-2">
-            {INDUSTRIAS.map((i) => {
-              const activa = valor.industria === i.id;
-              return (
-                <button
-                  type="button"
-                  key={i.id}
-                  onClick={() => set({ industria: i.id })}
-                  aria-pressed={activa}
-                  className={`rounded-full border px-3.5 py-2 text-sm font-medium transition-all ${
-                    activa
-                      ? "border-cian bg-cian/15 text-white shadow-[0_0_16px_-4px_rgba(0,229,255,.6)]"
-                      : "border-white/10 bg-white/[.03] text-tenue hover:border-cian/40 hover:text-white"
-                  }`}
-                >
-                  {i.label}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-        <div>
-          <label htmlFor="ciudad" className="etiqueta mb-2 block">
-            Ciudad
-          </label>
-          <input
-            id="ciudad"
-            className="campo"
-            list="ciudades"
-            placeholder="Medellín"
-            value={valor.ciudad}
-            onChange={(e) => set({ ciudad: e.target.value })}
-          />
-          <datalist id="ciudades">
-            {["Medellín", "Bogotá", "Cali", "Barranquilla", "Cartagena", "Bucaramanga", "Pereira"].map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-dashed border-oro/35 bg-oro/[.04] p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="etiqueta mr-1 !text-oro-claro">Plan B</span>
-          <span className="mr-auto text-sm text-tenue">Si un sitio no se deja leer:</span>
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <span className="text-gris">¿El sitio no se deja leer?</span>
           <button
             type="button"
             onClick={() => setPlanB(planB === "texto" ? null : "texto")}
-            className={`rounded-lg border px-3 py-1.5 text-sm ${planB === "texto" ? "border-oro text-oro-claro" : "border-white/15 text-[#dfe7ec] hover:border-oro/60"}`}
+            className={`font-semibold underline-offset-4 hover:underline ${planB === "texto" ? "text-rojo" : "text-tinta"}`}
           >
             Pegar texto manualmente
           </button>
           <button
             type="button"
             onClick={() => setPlanB(planB === "archivo" ? null : "archivo")}
-            className={`rounded-lg border px-3 py-1.5 text-sm ${planB === "archivo" ? "border-oro text-oro-claro" : "border-white/15 text-[#dfe7ec] hover:border-oro/60"}`}
+            className={`font-semibold underline-offset-4 hover:underline ${planB === "archivo" ? "text-rojo" : "text-tinta"}`}
           >
-            Subir Excel/CSV del inventario
+            Subir inventario Excel/CSV
           </button>
         </div>
 
         {planB === "texto" && (
           <textarea
-            rows={5}
+            rows={6}
             className="campo entrar mt-3 resize-y text-sm"
-            placeholder={"Abre la publicación en otra pestaña, presiona Ctrl+A y Ctrl+C, y pega aquí con Ctrl+V.\nPuedes pegar varias publicaciones seguidas: la app separa cada producto."}
+            placeholder={"Abre la publicación en otra pestaña, presiona Ctrl+A y Ctrl+C, y pega aquí con Ctrl+V.\nPuedes pegar varias publicaciones seguidas: la app separa cada carro."}
             value={valor.textoManual}
             onChange={(e) => set({ textoManual: e.target.value })}
             aria-label="Texto pegado manualmente"
@@ -174,13 +139,7 @@ export default function FormularioEntrada({
 
         {planB === "archivo" && (
           <div className="entrar mt-3">
-            <input
-              ref={inputArchivo}
-              type="file"
-              accept=".xlsx,.csv,.tsv,.txt"
-              className="hidden"
-              onChange={(e) => cargarArchivo(e.target.files?.[0])}
-            />
+            <input ref={inputArchivo} type="file" accept=".xlsx,.csv,.tsv,.txt" className="hidden" onChange={(e) => cargarArchivo(e.target.files?.[0])} />
             <div
               onClick={() => inputArchivo.current?.click()}
               onDragOver={(e) => e.preventDefault()}
@@ -188,41 +147,100 @@ export default function FormularioEntrada({
                 e.preventDefault();
                 cargarArchivo(e.dataTransfer.files?.[0]);
               }}
-              className="flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-white/10 bg-black/30 px-4 py-5 text-center hover:border-oro/50"
+              className="flex cursor-pointer flex-col items-center gap-1 rounded-[10px] border border-dashed border-[#c9c9c4] bg-niebla px-4 py-6 text-center hover:border-tinta"
               role="button"
               tabIndex={0}
               onKeyDown={(e) => e.key === "Enter" && inputArchivo.current?.click()}
             >
               {valor.archivo ? (
                 <>
-                  <span className="font-medium">{valor.archivo.nombre}</span>
-                  <span className="font-mono text-xs text-ok">{valor.archivo.filas} filas listas</span>
+                  <span className="font-semibold">{valor.archivo.nombre}</span>
+                  <span className="text-sm text-verde">{valor.archivo.filas} carros listos</span>
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       set({ archivo: null });
                     }}
-                    className="mt-1 text-xs text-tenue underline"
+                    className="mt-1 text-xs text-gris underline"
                   >
                     Quitar archivo
                   </button>
                 </>
               ) : (
                 <>
-                  <span className="text-sm">Arrastra el archivo o haz clic para elegirlo</span>
-                  <span className="font-mono text-xs text-tenue">.xlsx o .csv · se usan hasta 12 productos</span>
+                  <span className="text-sm font-medium">Arrastra el archivo o haz clic para elegirlo</span>
+                  <span className="text-xs text-gris">.xlsx o .csv · se analizan hasta 12 carros</span>
                 </>
               )}
             </div>
-            {errorArchivo && <p className="mt-2 text-sm text-peligro">{errorArchivo}</p>}
+            {errorArchivo && <p className="mt-2 text-sm text-rojo">{errorArchivo}</p>}
           </div>
         )}
-      </div>
+      </Paso>
 
-      <button type="submit" disabled={!listo} className="boton-procesar w-full py-4 text-lg">
-        Procesar
-      </button>
+      <Paso n="02" titulo="Tu cliente" ayuda="Quién compra, para qué y cuánto quiere pagar. Con esto se calcula la puntuación.">
+        <textarea
+          id="mensaje"
+          rows={3}
+          className="campo resize-y"
+          placeholder="Ej. Familia con dos hijos en Medellín, presupuesto de 80 a 110 millones, quiere una SUV automática y segura"
+          value={valor.mensaje}
+          onChange={(e) => set({ mensaje: e.target.value })}
+          aria-label="Contexto del cliente"
+        />
+        <div className="mt-3 flex flex-wrap gap-2">
+          {PERFILES.map((p) => (
+            <button
+              type="button"
+              key={p}
+              onClick={() => agregarPerfil(p)}
+              className="rounded-full border border-linea bg-white px-3 py-1.5 text-sm text-tinta transition-colors hover:border-tinta"
+            >
+              + {p}
+            </button>
+          ))}
+        </div>
+      </Paso>
+
+      <Paso n="03" titulo="Ciudad" ayuda="Para comparar los precios con el mercado local.">
+        <div className="flex flex-wrap gap-2">
+          {CIUDADES.map((c) => {
+            const activa = valor.ciudad === c;
+            return (
+              <button
+                type="button"
+                key={c}
+                onClick={() => set({ ciudad: c })}
+                aria-pressed={activa}
+                className={`rounded-[10px] border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  activa ? "border-tinta bg-tinta text-white" : "border-linea bg-white text-tinta hover:border-tinta"
+                }`}
+              >
+                {c}
+              </button>
+            );
+          })}
+          <input
+            className={`campo !w-44 !py-2.5 text-sm ${otraCiudad && valor.ciudad ? "!border-tinta" : ""}`}
+            placeholder="Otra ciudad"
+            value={otraCiudad ? valor.ciudad : ""}
+            onChange={(e) => set({ ciudad: e.target.value })}
+            aria-label="Otra ciudad"
+          />
+        </div>
+      </Paso>
+
+      <div className="flex flex-col items-stretch gap-3 border-t border-linea pt-7 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-gris">
+          {listo
+            ? `${numEnlaces || "Sin"} enlace(s)${valor.textoManual.trim() ? " + texto pegado" : ""}${valor.archivo ? " + inventario" : ""} · ${valor.ciudad || "Colombia"}`
+            : "Agrega al menos un carro para empezar."}
+        </p>
+        <button type="submit" disabled={!listo} className="boton-principal px-10 py-4 text-sm">
+          Analizar carros →
+        </button>
+      </div>
     </form>
   );
 }

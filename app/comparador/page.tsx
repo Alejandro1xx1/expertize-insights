@@ -24,28 +24,32 @@ export default function ComparadorPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 pb-24 pt-5 sm:px-6">
-      <header className="mb-8 flex items-center justify-between">
-        <Link href="/">
-          <Marca />
-        </Link>
-        <Link href="/" className="boton-secundario px-3.5 py-2 text-sm">
-          ← Volver
-        </Link>
-      </header>
-      {config ? (
-        <EditorComparador config={config} />
-      ) : (
-        <div className="vidrio entrar mx-auto max-w-xl space-y-4 p-6 text-center">
-          <h1 className="text-2xl font-bold">Abrir comparador guardado</h1>
-          <p className="text-tenue">Carga el JSON que descargaste desde “Así lo vería tu cliente” para mostrarlo de nuevo o ajustarlo para otro cliente.</p>
-          <label className="boton-procesar inline-block cursor-pointer px-6 py-3">
-            Elegir archivo JSON
-            <input type="file" accept="application/json,.json" className="hidden" onChange={(e) => cargar(e.target.files?.[0])} />
-          </label>
-          {error && <p className="text-sm text-peligro">{error}</p>}
+    <main className="min-h-dvh">
+      <header className="bg-negro">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6 sm:px-8">
+          <Link href="/">
+            <Marca claro />
+          </Link>
+          <Link href="/" className="boton-borde px-4 py-2.5 text-[0.7rem] text-white hover:bg-white hover:text-tinta">
+            ← Volver
+          </Link>
         </div>
-      )}
-    </div>
+      </header>
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-8">
+        {config ? (
+          <EditorComparador config={config} />
+        ) : (
+          <div className="tarjeta entrar mx-auto max-w-xl space-y-5 p-8 text-center">
+            <h1 className="titulo text-2xl">Comparadores guardados</h1>
+            <p className="text-gris">Carga el JSON que descargaste desde “Así lo vería tu cliente” para mostrarlo de nuevo o ajustarlo para otro cliente.</p>
+            <label className="boton-principal inline-block cursor-pointer px-8 py-4 text-xs">
+              Elegir archivo JSON
+              <input type="file" accept="application/json,.json" className="hidden" onChange={(e) => cargar(e.target.files?.[0])} />
+            </label>
+            {error && <p className="text-sm text-rojo">{error}</p>}
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

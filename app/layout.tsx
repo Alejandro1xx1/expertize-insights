@@ -1,33 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, JetBrains_Mono, Sora } from "next/font/google";
-import FondoAnimado from "@/components/FondoAnimado";
+import { Archivo, Inter } from "next/font/google";
 import "./globals.css";
 
-const sora = Sora({ subsets: ["latin"], variable: "--font-sora", weight: ["400", "600", "700", "800"] });
-const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
-const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
+const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo", axes: ["wdth"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Expertize Insights",
-  description: "Insights de producto y mercado en tiempo real para equipos comerciales.",
+  title: "TORQUE · Inteligencia automotriz",
+  description: "Análisis de carros y mercado en tiempo real para equipos comerciales de concesionarios.",
   robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07080C",
+  themeColor: "#0A0A0B",
   width: "device-width",
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${sora.variable} ${dmSans.variable} ${jetbrains.variable}`}>
-      <body>
-        <div className="fondo-cuadricula" aria-hidden />
-        <div className="fondo-brillo" aria-hidden />
-        <FondoAnimado />
-        <div className="relative z-10">{children}</div>
-      </body>
+    <html lang="es" className={`${archivo.variable} ${inter.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

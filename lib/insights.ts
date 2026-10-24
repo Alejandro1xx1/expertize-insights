@@ -7,12 +7,11 @@ import {
   type Mercado,
   type PrecioVsMercado,
   type Producto,
-  industriaLabel,
 } from "./schemas";
 import { parseStructured } from "./claude";
 import { formatoMoneda } from "./format";
 
-type Contexto = { industria: string; ciudad: string; mensaje: string };
+type Contexto = { ciudad: string; mensaje: string };
 
 function productosParaModelo(productos: Producto[]): string {
   return JSON.stringify(
@@ -60,7 +59,7 @@ export async function generarInsights(
   signal: AbortSignal,
 ): Promise<Insights> {
   const data = await parseStructured({
-    system: `Eres un asesor comercial experto en ${industriaLabel(ctx.industria)} en Colombia. Analizas productos frente al contexto de un prospecto y al mercado. Respondes en español claro, frases cortas, tono profesional y persuasivo pero honesto.
+    system: `Eres un asesor comercial experto en venta de carros (nuevos, usados y de lujo) en Colombia. Analizas productos frente al contexto de un prospecto y al mercado. Respondes en español claro, frases cortas, tono profesional y persuasivo pero honesto.
 
 Reglas estrictas:
 - Usa SOLO los datos de los productos y del mercado entregados. NUNCA inventes precios, cifras ni características. Si un dato no está, dilo como "Sin dato".
@@ -69,7 +68,7 @@ Reglas estrictas:
   - "puntuacion": entero 0–100 según qué tan bien encaja con el contexto del mensaje (presupuesto, uso, perfil). Penaliza datos faltantes clave.
   - "pros" y "contras": 2 a 4 cada uno, concretos, basados en datos.
   - "idealPara": perfil de comprador en una frase.
-  - "referenciaMercado": elige el rango de la investigación de mercado que corresponde a ese producto y copia su "promedio" (o el punto medio entre min y max si no hay promedio) y su moneda, en la MISMA unidad que el precio del producto (si el rango es por m² y el producto tiene área, puedes multiplicar e indicarlo en "metodo"). Si no hay un rango comparable, todo en null.
+  - "referenciaMercado": elige el rango de la investigación de mercado que corresponde a ese producto y copia su "promedio" (o el punto medio entre min y max si no hay promedio) y su moneda, en la MISMA unidad que el precio del producto (usa el segmento que coincida en tipo de carro, gama y antigüedad; explica la elección en "metodo"). Si no hay un rango comparable, todo en null.
 - "preguntasCliente": 5 a 7 preguntas que el comprador final se hace antes de comprar, con "porQue" de una línea.`,
     prompt: `Contexto del prospecto: ${ctx.mensaje || "(sin contexto)"}
 Ciudad: ${ctx.ciudad || "(sin ciudad)"}
@@ -118,10 +117,10 @@ export async function generarComparador(
   signal: AbortSignal,
 ): Promise<ComparadorConfig> {
   const preguntas = await parseStructured({
-    system: `Diseñas comparadores interactivos para compradores finales de ${industriaLabel(ctx.industria)} en Colombia. Respondes en español, tono cercano (tú).
+    system: `Diseñas comparadores interactivos para compradores finales de carros en Colombia. Respondes en español, tono cercano (tú).
 
-Crea 3 o 4 preguntas guiadas de opción múltiple sobre USO y PREFERENCIAS (no sobre presupuesto, eso ya existe). Cada pregunta tiene 2 a 4 opciones. Para cada opción, asigna "puntos" entre -20 y 20 a CADA producto (por id) según qué tan bien encaja con esa respuesta, basándote SOLO en los atributos dados. Si un atributo no está, usa 0 para ese producto.
-"titulo": título atractivo del comparador. "subtitulo": una frase.
+Crea 3 o 4 preguntas guiadas de opción múltiple sobre USO y PREFERENCIAS del carro (no sobre presupuesto, eso ya existe). Ejemplos de temas: uso principal (ciudad, carretera, familia, trabajo), tipo de carrocería preferida, transmisión, prioridad (consumo, espacio, potencia, tecnología, lujo), tolerancia al kilometraje. Cada pregunta tiene 2 a 4 opciones. Para cada opción, asigna "puntos" entre -20 y 20 a CADA producto (por id) según qué tan bien encaja con esa respuesta, basándote SOLO en los atributos dados. Si un atributo no está, usa 0 para ese producto.
+"titulo": título atractivo del comparador (ej. "Encuentra tu próximo carro"). "subtitulo": una frase.
 Ids de preguntas y opciones: cortos, en minúsculas y sin espacios.`,
     prompt: `Contexto del vendedor: ${ctx.mensaje || "(sin contexto)"} · Ciudad: ${ctx.ciudad || "(sin ciudad)"}
 
@@ -140,7 +139,7 @@ ${productosParaModelo(productos)}`,
 
   return {
     version: 1,
-    marca: { nombre: "Mi Marca", colorPrincipal: "#00E5FF", logoUrl: null, eslogan: null },
+    marca: { nombre: "Mi Concesionario", colorPrincipal: "#C8102E", logoUrl: null, eslogan: null },
     titulo: preguntas.titulo,
     subtitulo: preguntas.subtitulo,
     preguntas: [

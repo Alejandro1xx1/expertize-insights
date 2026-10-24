@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import EscenaHero from "@/components/EscenaHero";
 import Marca from "@/components/Marca";
 
 function Formulario() {
@@ -34,11 +35,11 @@ function Formulario() {
   }
 
   return (
-    <form onSubmit={entrar} className="vidrio entrar w-full max-w-sm space-y-5 p-7">
+    <form onSubmit={entrar} className="tarjeta entrar w-full max-w-sm space-y-6 p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,.6)]">
       <Marca />
       <div>
-        <h1 className="text-xl font-semibold">Acceso privado</h1>
-        <p className="mt-1 text-sm text-tenue">Ingresa la contraseña del equipo para continuar.</p>
+        <h1 className="titulo text-2xl">Acceso privado</h1>
+        <p className="mt-2 text-sm text-gris">Ingresa la contraseña del equipo para continuar.</p>
       </div>
       <input
         type="password"
@@ -49,8 +50,8 @@ function Formulario() {
         onChange={(e) => setPassword(e.target.value)}
         aria-label="Contraseña"
       />
-      {error && <p className="text-sm text-peligro">{error}</p>}
-      <button type="submit" disabled={cargando || !password} className="boton-procesar w-full py-3 text-base">
+      {error && <p className="text-sm text-rojo">{error}</p>}
+      <button type="submit" disabled={cargando || !password} className="boton-principal w-full py-4 text-xs">
         {cargando ? "Verificando…" : "Entrar"}
       </button>
     </form>
@@ -59,10 +60,13 @@ function Formulario() {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
-      <Suspense>
-        <Formulario />
-      </Suspense>
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-negro px-4">
+      <EscenaHero compacta />
+      <div className="relative z-10 w-full max-w-sm">
+        <Suspense>
+          <Formulario />
+        </Suspense>
+      </div>
     </main>
   );
 }

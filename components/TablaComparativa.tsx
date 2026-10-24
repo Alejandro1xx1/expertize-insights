@@ -14,7 +14,7 @@ const norm = (s: string) =>
     .toLowerCase()
     .trim();
 
-/** Une las claves de atributos de todos los productos, ordenadas por cuántos productos las tienen. */
+/** Une las claves de atributos de todos los carros, ordenadas por cuántos las tienen. */
 function filasAtributos(productos: Producto[]): { clave: string; etiqueta: string }[] {
   const conteo = new Map<string, { etiqueta: string; n: number; orden: number }>();
   let orden = 0;
@@ -35,29 +35,29 @@ function filasAtributos(productos: Producto[]): { clave: string; etiqueta: strin
 export default function TablaComparativa({
   productos,
   insights,
-  esperandoInsights,
 }: {
   productos: Producto[];
   insights: Map<string, InsightProducto>;
-  esperandoInsights: boolean;
 }) {
   const filas = filasAtributos(productos);
-  const celda = "border-b border-borde/60 px-4 py-3 align-top";
-  const encabezado = `${celda} sticky left-0 z-10 bg-[#0a0e15] text-left etiqueta !text-tenue whitespace-nowrap`;
+  const celda = "border-b border-linea px-5 py-4 align-top";
+  const encabezado = `${celda} sticky left-0 z-10 bg-white text-left whitespace-nowrap text-[0.78rem] font-semibold text-gris`;
 
   return (
-    <div className="vidrio entrar overflow-hidden">
+    <div className="tarjeta entrar overflow-hidden">
       <div className="scroll-fino overflow-x-auto">
         <table className="w-full min-w-max border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
-              <th className={`${encabezado} min-w-32`}>Producto</th>
+              <th className={`${encabezado} min-w-32 align-bottom`}>
+                <span className="etiqueta !text-[0.6rem]">Modelo</span>
+              </th>
               {productos.map((p) => (
-                <th key={p.id} className={`${celda} w-60 min-w-52 max-w-64 text-left font-normal`}>
-                  <FotoProducto imagenes={p.imagenes} alt={p.nombre} sizes="240px" className="mb-3 aspect-[4/3] w-full rounded-lg" />
+                <th key={p.id} className={`${celda} w-64 min-w-56 max-w-72 text-left font-normal`}>
+                  <FotoProducto imagenes={p.imagenes} alt={p.nombre} sizes="280px" className="mb-4 aspect-[16/10] w-full rounded-[10px]" />
                   <div className="flex items-start gap-2">
                     <Fuente fuente={p.fuente} />
-                    <span className="font-titulo font-semibold leading-snug">{p.nombre}</span>
+                    <span className="cifra font-semibold leading-snug">{p.nombre}</span>
                   </div>
                 </th>
               ))}
@@ -67,7 +67,7 @@ export default function TablaComparativa({
             <tr>
               <th className={encabezado}>Precio</th>
               {productos.map((p) => (
-                <td key={p.id} className={`${celda} font-titulo text-base font-bold text-cian`}>
+                <td key={p.id} className={`${celda} cifra text-lg font-bold`}>
                   {p.precio !== null ? formatoMoneda(p.precio, p.moneda) : <SinDato />}
                 </td>
               ))}
@@ -76,7 +76,7 @@ export default function TablaComparativa({
               <th className={encabezado}>Vs. mercado</th>
               {productos.map((p) => (
                 <td key={p.id} className={celda}>
-                  <InsigniaMercado dato={insights.get(p.id)?.precioVsMercado} cargando={esperandoInsights} />
+                  <InsigniaMercado dato={insights.get(p.id)?.precioVsMercado} />
                 </td>
               ))}
             </tr>
@@ -88,18 +88,15 @@ export default function TablaComparativa({
                   <td key={p.id} className={celda}>
                     {ins ? (
                       <div className="flex items-center gap-3">
-                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
-                          <div
-                            className="barra-llenado h-full rounded-full"
-                            style={{ width: `${ins.puntuacion}%`, background: colorPuntuacion(ins.puntuacion), boxShadow: `0 0 10px ${colorPuntuacion(ins.puntuacion)}` }}
-                          />
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-niebla">
+                          <div className="barra-llenado h-full rounded-full" style={{ width: `${ins.puntuacion}%`, background: colorPuntuacion(ins.puntuacion) }} />
                         </div>
-                        <span className="font-titulo font-bold tabular-nums" style={{ color: colorPuntuacion(ins.puntuacion) }}>
+                        <span className="cifra font-bold" style={{ color: colorPuntuacion(ins.puntuacion) }}>
                           {ins.puntuacion}
                         </span>
                       </div>
                     ) : (
-                      <div className={`h-2 rounded-full bg-white/10 ${esperandoInsights ? "escaneo" : ""}`} />
+                      <SinDato />
                     )}
                   </td>
                 );
@@ -111,8 +108,8 @@ export default function TablaComparativa({
                 {productos.map((p) => {
                   const a = p.atributos.find((x) => norm(x.clave) === f.clave);
                   return (
-                    <td key={p.id} className={`${celda} max-w-64`}>
-                      {a ? <span className="break-words">{a.valor}</span> : <SinDato />}
+                    <td key={p.id} className={`${celda} max-w-72`}>
+                      {a ? <span className="break-words font-medium">{a.valor}</span> : <SinDato />}
                     </td>
                   );
                 })}
@@ -121,15 +118,15 @@ export default function TablaComparativa({
             <tr>
               <th className={encabezado}>Ideal para</th>
               {productos.map((p) => (
-                <td key={p.id} className={`${celda} max-w-64 text-[#dfe7ec]`}>
-                  {insights.get(p.id)?.idealPara ?? (esperandoInsights ? <span className="text-tenue">…</span> : <SinDato />)}
+                <td key={p.id} className={`${celda} max-w-72 leading-relaxed`}>
+                  {insights.get(p.id)?.idealPara ?? <SinDato />}
                 </td>
               ))}
             </tr>
           </tbody>
         </table>
       </div>
-      <p className="border-t border-borde px-4 py-2.5 font-mono text-[0.7rem] text-tenue">
+      <p className="bg-niebla px-5 py-3 text-xs text-gris">
         Cada columna indica su fuente (E1 = Enlace 1, TX = texto pegado, XL = inventario). Los datos no encontrados se muestran como “Sin dato”.
       </p>
     </div>

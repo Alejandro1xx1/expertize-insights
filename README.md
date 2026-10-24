@@ -1,6 +1,6 @@
-# Expertize Insights
+# TORQUE · Inteligencia automotriz
 
-Herramienta de ventas para usar **en vivo frente a prospectos** (concesionarios, inmobiliarias, constructoras, ventas de motos). Pegas enlaces de productos (o un catálogo), escribes el contexto del cliente, presionas **Procesar** y en menos de 90 segundos ves:
+Herramienta de ventas de **carros** para usar **en vivo frente a prospectos** (concesionarios de carros nuevos, usados y de lujo). Pegas los enlaces de los carros (o de un catálogo), describes al cliente, eliges la ciudad y presionas **Analizar carros**. Mientras se procesa, un carro recorre una pista de 0 a 100 %; al llegar a la meta aparece el showroom de resultados:
 
 - Resumen ejecutivo de 3 líneas.
 - Tarjetas de producto con foto, precio y características.
@@ -16,12 +16,12 @@ Herramienta de ventas para usar **en vivo frente a prospectos** (concesionarios,
 
 ## 1. Cómo funciona
 
-1. **Entrada.** Pegas los enlaces (uno por línea), el contexto, la industria y la ciudad. Si un sitio no se deja leer, usas el **Plan B**: pegar el texto a mano o subir el Excel/CSV del inventario.
-2. **Procesando.** El servidor trabaja **en paralelo**:
+1. **Entrada.** Pegas un enlace por cajón (al pegar uno aparece el siguiente), describes al cliente (con atajos como "Familia con hijos" o "Busca lujo") y eliges la ciudad. Si un sitio no se deja leer (Mercado Libre y TuCarro suelen bloquear), usas el **Plan B**: pegar el texto de la página o subir el Excel/CSV del inventario.
+2. **Procesando.** En pantalla, un carro avanza por una pista de 0 a 100 % con mensajes sencillos ("Revisando el carro…", "Estudiando el mercado…"). Por dentro, el servidor trabaja **en paralelo**:
    - Lee cada enlace con Claude (`claude-sonnet-5-5`) y su herramienta de lectura web (**web fetch**). Si es un catálogo, extrae hasta 12 productos. Cada enlace tiene su propio límite de tiempo: si uno falla, la app sigue con los demás y lo avisa en el registro.
    - Busca la investigación de mercado: primero en `data/market-cache/` (archivos del repositorio), después en la memoria del servidor y, si no la encuentra, la investiga en vivo con la herramienta de **búsqueda web** (web search).
-   - El registro estilo terminal muestra cada paso en tiempo real (Server-Sent Events), y cada producto aparece en pantalla apenas se lee.
-3. **Insights.** Con los productos y el mercado, Claude genera puntuaciones, pros y contras, perfiles y preguntas. El porcentaje frente al mercado lo calcula la app, no el modelo.
+   - El avance llega al navegador en tiempo real (Server-Sent Events). Al llegar al 100 % se revela el resultado completo.
+3. **Resultados (showroom).** Arriba, el carro recomendado en grande. Luego el resumen ejecutivo, la vitrina de carros, la comparativa lado a lado, las preguntas del cliente y el mercado de la ciudad con barras de rango de precio. Con los carros y el mercado, Claude genera puntuaciones, pros y contras, perfiles y preguntas. El porcentaje frente al mercado lo calcula la app, no el modelo.
 
 ### Cómo se evita inventar datos
 - El modelo tiene instrucciones estrictas de usar `null` cuando un dato no aparece. En pantalla se muestra como **"Sin dato"**.
@@ -31,12 +31,18 @@ Herramienta de ventas para usar **en vivo frente a prospectos** (concesionarios,
 - Cada producto y cada columna llevan su fuente: **E1** = Enlace 1, **TX** = texto pegado, **XL** = inventario.
 - Todas las respuestas del modelo se validan con **zod**. Si el JSON viene mal formado, se reintenta automáticamente.
 
+### Identidad visual
+- **Nombre:** TORQUE · Inteligencia automotriz.
+- **Estilo:** inspirado en los sitios de Porsche, Tesla y Mercedes-Benz: monocromo de lujo (negro, plata y fondo claro tipo showroom) con un solo acento **rojo carreras** (`#C8102E`) y dorado champán para las oportunidades.
+- **Tipografía:** Archivo expandida en mayúsculas para títulos, al estilo automotriz, e Inter para el texto.
+- **Animación:** escena nocturna con ciudad en movimiento y un carro (dibujado en SVG, sin fotos de terceros) con ruedas girando y faros encendidos.
+
 ### Pantallas
 | Ruta | Para qué |
 |---|---|
 | `/login` | Contraseña de acceso (protege toda la app). |
 | `/` | Entrada → procesamiento en vivo → insights → "Así lo vería tu cliente". |
-| `/admin` | Genera y descarga la caché de mercado (Carros, Motos, Vivienda venta, Vivienda arriendo × Medellín, Bogotá). |
+| `/admin` | Genera y descarga la caché del mercado de carros (Medellín, Bogotá, Cali, Barranquilla). |
 | `/comparador` | Abre un comparador guardado (el JSON que descargaste) para mostrarlo de nuevo a otro cliente. |
 
 ---
@@ -47,7 +53,7 @@ Herramienta de ventas para usar **en vivo frente a prospectos** (concesionarios,
 
 ### Paso A: conseguir la API key de Anthropic
 1. Entra a **https://console.anthropic.com** e inicia sesión.
-2. En el menú, ve a **API Keys** → **Create Key**. Ponle un nombre (por ejemplo, "Expertize Insights").
+2. En el menú, ve a **API Keys** → **Create Key**. Ponle un nombre (por ejemplo, "torque-vercel").
 3. Copia la clave (empieza por `sk-ant-…`). Guárdala en un lugar seguro: solo se muestra una vez.
 4. En **Billing**, carga saldo. Cada análisis consume tokens y búsquedas web.
 
@@ -90,8 +96,8 @@ Las rutas que procesan (`/api/process` y `/api/market`) están configuradas con 
 Con la caché, la investigación de mercado se carga al instante en vez de tardar entre 30 y 60 segundos en vivo. Ideal para tener todo listo antes de una reunión.
 
 1. Entra a `https://TU-APP.vercel.app/admin`.
-2. Presiona **Generar todas (8)**, o **Generar** en una sola combinación. Verás el registro en vivo y luego el resultado. Revísalo.
-3. Presiona **⤓ Descargar todas las listas** (o **⤓ JSON** en cada tarjeta). Los archivos se llaman, por ejemplo, `carros-medellin.json`, `vivienda-venta-bogota.json`, etc. **No les cambies el nombre.**
+2. Presiona **Generar todas (4)**, o **Generar** en una sola ciudad. Verás el proceso y luego el resultado. Revísalo.
+3. Presiona **Descargar las listas** (o **⤓ JSON** en cada tarjeta). Los archivos se llaman `carros-medellin.json`, `carros-bogota.json`, `carros-cali.json` y `carros-barranquilla.json`. **No les cambies el nombre.**
 4. Súbelos a GitHub desde el navegador:
    1. Abre el repositorio en github.com y entra a la carpeta `data` → `market-cache`.
    2. Presiona **Add file → Upload files** y arrastra los JSON.
@@ -100,7 +106,7 @@ Con la caché, la investigación de mercado se carga al instante en vez de tarda
 
 Recomendación: regenera la caché una vez al mes para mantener los precios al día.
 
-Si usas una ciudad o industria sin archivo de caché, la app la investiga en vivo y la guarda en memoria mientras el servidor siga activo. En Vercel esa memoria dura poco, porque los servidores se apagan cuando no se usan.
+Si usas una ciudad sin archivo de caché, la app la investiga en vivo y la guarda en memoria mientras el servidor siga activo. En Vercel esa memoria dura poco, porque los servidores se apagan cuando no se usan.
 
 ---
 

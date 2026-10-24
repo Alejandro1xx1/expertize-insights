@@ -5,7 +5,7 @@ import { urlValida } from "@/lib/hints";
 import { formatoMoneda } from "@/lib/format";
 import { generarComparador, generarInsights } from "@/lib/insights";
 import { obtenerMercado } from "@/lib/market";
-import { INDUSTRIAS, type Mercado, type Producto } from "@/lib/schemas";
+import type { Mercado, Producto } from "@/lib/schemas";
 import { conTimeout, crearSSE } from "@/lib/sse";
 
 export const runtime = "nodejs";
@@ -21,7 +21,6 @@ const MAX_PRODUCTOS = 12;
 const EntradaSchema = z.object({
   enlaces: z.array(z.string()).max(12).default([]),
   mensaje: z.string().max(4000).default(""),
-  industria: z.enum(INDUSTRIAS.map((i) => i.id) as [string, ...string[]]).default("otro"),
   ciudad: z.string().max(80).default(""),
   textoManual: z.string().max(60_000).nullable().default(null),
   archivo: z.object({ nombre: z.string().max(200), csv: z.string().max(400_000) }).nullable().default(null),
@@ -51,7 +50,7 @@ export async function POST(req: Request) {
     emit({ tipo: "log", nivel, texto });
 
   const inicio = Date.now();
-  const ctx = { industria: entrada.industria, ciudad: entrada.ciudad.trim(), mensaje: entrada.mensaje.trim() };
+  const ctx = { ciudad: entrada.ciudad.trim(), mensaje: entrada.mensaje.trim() };
 
   (async () => {
     try {
@@ -70,10 +69,16 @@ export async function POST(req: Request) {
       log(`Iniciando análisis · ${enlaces.length} enlace(s)${entrada.textoManual ? " + texto pegado" : ""}${entrada.archivo ? " + inventario" : ""}`);
 
       /* ── Mercado (en paralelo con la lectura de productos) ── */
+      const totalFuentes = enlaces.length + (entrada.textoManual?.trim() ? 1 : 0) + (entrada.archivo ? 1 : 0);
+      let progreso = 0.03;
+      const avanzar = (delta: number, texto: string) => {
+        progreso = Math.min(0.97, progreso + delta);
+        emit({ tipo: "avance", progreso, texto });
+      };
+      emit({ tipo: "avance", progreso, texto: totalFuentes > 1 ? `Revisando ${totalFuentes} fuentes…` : "Revisando el carro…" });
+
       const mercadoP: Promise<Mercado | null> = obtenerMercado(
-        ctx.industria,
         ctx.ciudad,
-        ctx.mensaje,
         conTimeout(signal, TIEMPO_MERCADO),
         {
           onOrigen: (o) => {
@@ -90,10 +95,12 @@ export async function POST(req: Request) {
         .then((m) => {
           log(`Mercado listo: ${m.rangosPrecio.length} rangos de precio, ${m.fuentes.length} fuentes.`, "ok");
           emit({ tipo: "mercado", mercado: m });
+          avanzar(0.17, `Mercado de ${ctx.ciudad || "Colombia"} analizado`);
           return m;
         })
         .catch((err) => {
           log(`No se pudo completar la investigación de mercado (${describeError(err)}). Se continúa sin comparación de precios.`, "warn");
+          avanzar(0.17, "Continuando sin datos de mercado");
           return null;
         });
 
@@ -131,7 +138,9 @@ export async function POST(req: Request) {
           const r = await extraerDeEnlace(url, n, ctx, conTimeout(signal, TIEMPO_ENLACE), onActivity);
           if (r.productos.length > 1) log(`Enlace ${n}: catálogo detectado con ${r.productos.length} productos.`, "ok");
           publicar(r, `Enlace ${n}`);
+          avanzar(0.48 / totalFuentes, r.productos[0] ? `Listo: ${r.productos[0].nombre}` : `Fuente ${n} revisada`);
         } catch (err) {
+          avanzar(0.48 / totalFuentes, `No se pudo leer la fuente ${n}`);
           motivosFallo.push(`Enlace ${n}: ${describeError(err)}`);
           log(`Enlace ${n} falló: ${describeError(err)} Se continúa con los demás. Puedes usar “Pegar texto manualmente”.`, "error");
         }
@@ -145,6 +154,8 @@ export async function POST(req: Request) {
               publicar(await extraerDeTexto(entrada.textoManual!, ctx, conTimeout(signal, TIEMPO_ENLACE)), "Texto pegado");
             } catch (err) {
               log(`No se pudo leer el texto pegado: ${describeError(err)}`, "error");
+            } finally {
+              avanzar(0.48 / totalFuentes, "Texto pegado revisado");
             }
           })(),
         );
@@ -159,6 +170,8 @@ export async function POST(req: Request) {
               publicar(await extraerDeFilas(archivo.csv, archivo.nombre, ctx, conTimeout(signal, TIEMPO_ENLACE)), "Inventario");
             } catch (err) {
               log(`No se pudo leer el inventario: ${describeError(err)}`, "error");
+            } finally {
+              avanzar(0.48 / totalFuentes, "Inventario revisado");
             }
           })(),
         );
@@ -176,7 +189,9 @@ export async function POST(req: Request) {
       }
       log(`${productos.length} producto(s) listos. Esperando la investigación de mercado…`, "ok");
 
+      if (progreso < 0.5) avanzar(0, "Estudiando el mercado…");
       const mercado = await mercadoP;
+      avanzar(0, "Comparando precios y armando tu recomendación…");
 
       /* ── Insights + comparador del cliente en paralelo ── */
       log(mercado ? "Comparando precios contra el mercado…" : "Calculando puntuaciones…");
@@ -187,17 +202,25 @@ export async function POST(req: Request) {
         .then((ins) => {
           emit({ tipo: "insights", insights: ins });
           log("Insights listos.", "ok");
+          avanzar(0.2, "Recomendación lista");
           return ins;
         })
         .catch((err) => {
           log(`No se pudieron generar los insights: ${describeError(err)}`, "error");
+          avanzar(0.2, "Continuando sin puntuaciones");
           return null;
         });
 
-      const comparadorP = generarComparador(productos, ctx, conTimeout(signal, TIEMPO_INSIGHTS)).catch((err) => {
-        log(`No se pudo preparar el comparador del cliente: ${describeError(err)}`, "warn");
-        return null;
-      });
+      const comparadorP = generarComparador(productos, ctx, conTimeout(signal, TIEMPO_INSIGHTS))
+        .then((c) => {
+          avanzar(0.1, "Vista del cliente lista");
+          return c;
+        })
+        .catch((err) => {
+          log(`No se pudo preparar el comparador del cliente: ${describeError(err)}`, "warn");
+          avanzar(0.1, "Finalizando");
+          return null;
+        });
 
       const [insights, comparador] = await Promise.all([insightsP, comparadorP]);
       if (comparador) {
@@ -214,6 +237,7 @@ export async function POST(req: Request) {
 
       const segundos = Math.round((Date.now() - inicio) / 100) / 10;
       log(`Análisis completo en ${segundos} s.`, "ok");
+      emit({ tipo: "avance", progreso: 1, texto: "Análisis completo" });
       emit({ tipo: "fin", segundos });
     } catch (err) {
       emit({ tipo: "error", mensaje: describeError(err) });

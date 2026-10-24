@@ -79,17 +79,13 @@ export default function CajonesEnlaces({ valor, onChange }: { valor: string[]; o
         return (
           <div
             key={i}
-            className={`entrar flex items-center gap-3 rounded-xl border px-3 py-2 transition-colors ${
-              valido
-                ? "border-cian/45 bg-cian/[.06] shadow-[0_0_18px_-8px_rgba(0,229,255,.7)]"
-                : lleno
-                  ? "border-peligro/50 bg-peligro/[.05]"
-                  : "border-dashed border-white/15 bg-black/30"
+            className={`entrar flex items-center gap-3 rounded-[10px] border bg-white px-3 py-2.5 transition-colors ${
+              valido ? "border-tinta/80" : lleno ? "border-rojo/60" : "border-dashed border-[#c9c9c4] focus-within:border-tinta"
             }`}
           >
             <span
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-bold ${
-                valido ? "bg-cian text-[#031015]" : "bg-white/5 text-tenue"
+              className={`cifra flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xs font-bold ${
+                valido ? "bg-tinta text-white" : "bg-niebla text-gris"
               }`}
             >
               {i + 1}
@@ -110,12 +106,12 @@ export default function CajonesEnlaces({ valor, onChange }: { valor: string[]; o
                     refs.current[i + 1]?.focus();
                   }
                 }}
-                placeholder={i === 0 ? "Pega aquí el enlace del primer producto o catálogo" : "Pega el siguiente enlace…"}
+                placeholder={i === 0 ? "Pega aquí el enlace del primer carro o del catálogo" : "Pega el siguiente carro…"}
                 aria-label={`Enlace ${i + 1}`}
-                className="w-full bg-transparent py-1 font-mono text-sm text-texto outline-none placeholder:font-sans placeholder:text-[#6f7e8a]"
+                className="w-full truncate bg-transparent py-0.5 text-[0.95rem] text-tinta outline-none placeholder:text-[#8b9097]"
               />
               {lleno && (
-                <div className={`font-mono text-[0.68rem] ${valido ? (sitioBloqueado(enlace) ? "text-oro-claro" : "text-cian-suave") : "text-peligro"}`}>
+                <div className={`text-[0.72rem] ${valido ? (sitioBloqueado(enlace) ? "text-champan-oscuro" : "text-verde") : "text-rojo"}`}>
                   {!valido
                     ? "No parece un enlace válido (debe empezar por https://)"
                     : sitioBloqueado(enlace)
@@ -129,7 +125,7 @@ export default function CajonesEnlaces({ valor, onChange }: { valor: string[]; o
                 type="button"
                 onClick={() => quitar(i)}
                 aria-label={`Quitar enlace ${i + 1}`}
-                className="shrink-0 rounded-lg px-2 py-1 text-tenue hover:bg-white/5 hover:text-white"
+                className="shrink-0 rounded-md px-2 py-1 text-gris hover:bg-niebla hover:text-tinta"
               >
                 ✕
               </button>
@@ -137,7 +133,7 @@ export default function CajonesEnlaces({ valor, onChange }: { valor: string[]; o
           </div>
         );
       })}
-      {cajones.length >= MAX && <p className="font-mono text-xs text-oro-claro">Máximo {MAX} enlaces por análisis.</p>}
+      {cajones.length >= MAX && <p className="text-xs text-champan-oscuro">Máximo {MAX} enlaces por análisis.</p>}
     </div>
   );
 }

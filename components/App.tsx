@@ -2,127 +2,130 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { ComparadorConfig, EventoStream, InsightProducto, Insights, Mercado, Producto } from "@/lib/schemas";
-import { industriaLabel } from "@/lib/schemas";
+import { formatoMoneda } from "@/lib/format";
+import type { ComparadorConfig, EventoStream, InsightProducto, Insights, LogNivel, Mercado, Producto } from "@/lib/schemas";
 import { leerSSE } from "@/lib/sse-client";
+import AnilloPuntuacion from "./AnilloPuntuacion";
 import EditorComparador from "./EditorComparador";
+import EscenaHero from "./EscenaHero";
 import FormularioEntrada, { ENTRADA_VACIA, type DatosEntrada } from "./FormularioEntrada";
+import FotoProducto from "./FotoProducto";
+import InsigniaMercado from "./InsigniaMercado";
 import Marca from "./Marca";
 import PanelMercado from "./PanelMercado";
+import ProgresoCarro from "./ProgresoCarro";
 import TablaComparativa from "./TablaComparativa";
-import TarjetaProducto from "./TarjetaProducto";
-import Terminal, { type LineaLog } from "./Terminal";
+import TarjetaProducto, { specsClave } from "./TarjetaProducto";
 
-type Estado = "entrada" | "procesando" | "listo";
+type Estado = "entrada" | "procesando" | "resultados" | "error";
+type Linea = { nivel: LogNivel; texto: string };
 
-function Seccion({ titulo, etiqueta, children, extra }: { titulo: string; etiqueta: string; children: React.ReactNode; extra?: React.ReactNode }) {
+function Seccion({ titulo, etiqueta, children }: { titulo: string; etiqueta: string; children: React.ReactNode }) {
   return (
-    <section className="entrar space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <div className="etiqueta">{etiqueta}</div>
-          <h2 className="mt-1 text-2xl font-bold">{titulo}</h2>
-        </div>
-        {extra}
+    <section className="entrar space-y-6">
+      <div>
+        <div className="etiqueta text-rojo">{etiqueta}</div>
+        <h2 className="titulo mt-2 text-2xl sm:text-3xl">{titulo}</h2>
       </div>
       {children}
     </section>
   );
 }
 
-function Esqueleto({ alto = "h-24", texto }: { alto?: string; texto: string }) {
+function Encabezado({ claro, onInicio }: { claro: boolean; onInicio: () => void }) {
   return (
-    <div className={`vidrio escaneo flex ${alto} items-center justify-center`}>
-      <span className="font-mono text-sm text-tenue">{texto}</span>
-    </div>
+    <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-6 sm:px-8">
+      <button onClick={onInicio} aria-label="Inicio">
+        <Marca claro={claro} />
+      </button>
+      <nav className="flex items-center gap-1">
+        <Link href="/comparador" className={`hidden rounded-md px-3 py-2 text-sm sm:block ${claro ? "text-plata hover:text-white" : "text-gris hover:text-tinta"}`}>
+          Comparadores guardados
+        </Link>
+        <Link href="/admin" className={`rounded-md px-3 py-2 text-sm ${claro ? "text-plata hover:text-white" : "text-gris hover:text-tinta"}`}>
+          Admin
+        </Link>
+      </nav>
+    </header>
   );
 }
 
 export default function App() {
   const [entrada, setEntrada] = useState<DatosEntrada>(ENTRADA_VACIA);
   const [estado, setEstado] = useState<Estado>("entrada");
-  const [lineas, setLineas] = useState<LineaLog[]>([]);
+  const [lineas, setLineas] = useState<Linea[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
-  const [productosListos, setProductosListos] = useState(false);
   const [mercado, setMercado] = useState<Mercado | null>(null);
   const [insights, setInsights] = useState<Insights | null>(null);
   const [comparador, setComparador] = useState<ComparadorConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [segundos, setSegundos] = useState<number | null>(null);
+  const [avance, setAvance] = useState({ progreso: 0, texto: "Arrancando motores…" });
+  const [terminado, setTerminado] = useState(false);
   const [verCliente, setVerCliente] = useState(false);
-  const [verRegistro, setVerRegistro] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
-  const inicioRef = useRef(0);
-  const idRef = useRef(0);
+  const productosRef = useRef(0);
 
   const insightsPorId = useMemo(
     () => new Map<string, InsightProducto>((insights?.productos ?? []).map((p) => [p.id, p])),
     [insights],
   );
-  const mejorId = useMemo(() => {
-    if (!insights?.productos.length) return null;
-    const top = [...insights.productos].sort((a, b) => b.puntuacion - a.puntuacion)[0];
-    return top.puntuacion >= 60 ? top.id : null;
-  }, [insights]);
   const productosOrdenados = useMemo(() => {
     if (!insights) return productos;
     return [...productos].sort((a, b) => (insightsPorId.get(b.id)?.puntuacion ?? 0) - (insightsPorId.get(a.id)?.puntuacion ?? 0));
   }, [productos, insights, insightsPorId]);
+  const recomendado = productosOrdenados[0];
+  const insightRecomendado = recomendado ? insightsPorId.get(recomendado.id) : undefined;
+  const avisos = lineas.filter((l) => l.nivel === "warn" || l.nivel === "error");
 
-  const agregarLinea = useCallback((nivel: LineaLog["nivel"], texto: string) => {
-    setLineas((l) => [...l, { id: idRef.current++, nivel, texto, t: performance.now() - inicioRef.current }]);
+  const onEvento = useCallback((e: EventoStream) => {
+    switch (e.tipo) {
+      case "log":
+        setLineas((l) => [...l, { nivel: e.nivel, texto: e.texto }]);
+        break;
+      case "avance":
+        setAvance((a) => ({ progreso: Math.max(a.progreso, e.progreso), texto: e.texto }));
+        break;
+      case "producto":
+        productosRef.current++;
+        setProductos((p) => [...p, e.producto]);
+        setAvance((a) => ({ ...a, texto: `Encontrado: ${e.producto.nombre}` }));
+        break;
+      case "mercado":
+        setMercado(e.mercado);
+        break;
+      case "insights":
+        setInsights(e.insights);
+        break;
+      case "comparador":
+        setComparador(e.config);
+        break;
+      case "error":
+        setError(e.mensaje);
+        setLineas((l) => [...l, { nivel: "error", texto: e.mensaje }]);
+        break;
+      case "fin":
+        setSegundos(e.segundos);
+        break;
+    }
   }, []);
-
-  const onEvento = useCallback(
-    (e: EventoStream) => {
-      switch (e.tipo) {
-        case "log":
-          agregarLinea(e.nivel, e.texto);
-          break;
-        case "producto":
-          setProductos((p) => [...p, e.producto]);
-          break;
-        case "productos_listos":
-          setProductosListos(true);
-          break;
-        case "mercado":
-          setMercado(e.mercado);
-          break;
-        case "insights":
-          setInsights(e.insights);
-          break;
-        case "comparador":
-          setComparador(e.config);
-          break;
-        case "error":
-          setError(e.mensaje);
-          agregarLinea("error", e.mensaje);
-          break;
-        case "fin":
-          setSegundos(e.segundos);
-          break;
-      }
-    },
-    [agregarLinea],
-  );
 
   async function procesar() {
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-    inicioRef.current = performance.now();
+    productosRef.current = 0;
     setLineas([]);
     setProductos([]);
-    setProductosListos(false);
     setMercado(null);
     setInsights(null);
     setComparador(null);
     setError(null);
     setSegundos(null);
-    setVerRegistro(true);
+    setTerminado(false);
+    setAvance({ progreso: 0.02, texto: "Arrancando motores…" });
     setEstado("procesando");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    agregarLinea("info", "Conectando con el motor de análisis…");
+    window.scrollTo({ top: 0 });
 
     try {
       await leerSSE(
@@ -134,7 +137,6 @@ export default function App() {
           body: JSON.stringify({
             enlaces: entrada.enlaces.map((l) => l.trim()).filter(Boolean),
             mensaje: entrada.mensaje,
-            industria: entrada.industria,
             ciudad: entrada.ciudad,
             textoManual: entrada.textoManual.trim() || null,
             archivo: entrada.archivo ? { nombre: entrada.archivo.nombre, csv: entrada.archivo.csv } : null,
@@ -142,16 +144,12 @@ export default function App() {
         },
         onEvento,
       );
-    } catch (err) {
-      if (!ctrl.signal.aborted) {
-        const msg = "Se perdió la conexión con el servidor. Revisa tu internet e intenta de nuevo.";
-        setError(msg);
-        agregarLinea("error", msg);
-      }
+    } catch {
+      if (!ctrl.signal.aborted) setError("Se perdió la conexión con el servidor. Revisa tu internet e intenta de nuevo.");
     } finally {
       if (abortRef.current === ctrl) {
-        setEstado("listo");
-        setVerRegistro(false);
+        if (productosRef.current > 0) setTerminado(true);
+        else setEstado("error");
       }
     }
   }
@@ -160,165 +158,210 @@ export default function App() {
     abortRef.current?.abort();
     setEstado("entrada");
     setVerCliente(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0 });
   }
 
-  const procesando = estado === "procesando";
-  const esperandoInsights = procesando && !insights;
-
-  return (
-    <div className="mx-auto w-full max-w-7xl px-4 pb-24 pt-5 sm:px-6">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <button onClick={nuevo} aria-label="Inicio">
-          <Marca />
-        </button>
-        <nav className="flex items-center gap-2">
-          {estado !== "entrada" && (
-            <button onClick={nuevo} className="boton-secundario px-3.5 py-2 text-sm">
-              ＋ Nuevo análisis
-            </button>
-          )}
-          <Link href="/admin" className="rounded-lg px-3 py-2 text-sm text-tenue hover:text-white">
-            Admin
-          </Link>
-        </nav>
-      </header>
-
-      {estado === "entrada" && (
-        <div className="space-y-8">
-          <div className="entrar mx-auto max-w-3xl text-center">
-            <div className="etiqueta mb-3">Análisis comercial en tiempo real</div>
-            <h1 className="text-3xl font-extrabold leading-tight sm:text-5xl">
-              Pega los enlaces. <span className="text-cian [text-shadow:0_0_30px_rgba(0,229,255,.45)]">Obtén insights en vivo.</span>
+  /* ───────────── Entrada ───────────── */
+  if (estado === "entrada") {
+    return (
+      <main>
+        <div className="relative min-h-[620px] overflow-hidden bg-negro sm:min-h-[720px]">
+          <EscenaHero />
+          <Encabezado claro onInicio={nuevo} />
+          <div className="relative z-10 mx-auto max-w-7xl px-4 pb-48 pt-10 sm:px-8 sm:pt-20">
+            <div className="etiqueta entrar text-plata">Análisis comercial en vivo</div>
+            <h1 className="titulo entrar mt-4 max-w-3xl text-[2.6rem] text-white sm:text-7xl" style={{ animationDelay: "80ms" }}>
+              El carro correcto <span className="text-plata">para cada cliente.</span>
             </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-tenue sm:text-lg">
-              Leemos cada producto, investigamos el mercado de tu ciudad y te mostramos qué conviene, por qué y a quién venderlo.
+            <p className="entrar mt-6 max-w-xl text-lg leading-relaxed text-white/75" style={{ animationDelay: "160ms" }}>
+              Pega los carros que tienes en vitrina. TORQUE los lee, los compara con el mercado de tu ciudad y te dice cuál recomendar y por qué.
             </p>
           </div>
+        </div>
+        <div className="relative z-10 mx-auto -mt-32 max-w-5xl px-4 pb-24 sm:px-8">
           <FormularioEntrada valor={entrada} onChange={setEntrada} onProcesar={procesar} />
         </div>
-      )}
+      </main>
+    );
+  }
 
-      {estado !== "entrada" && (
-        <div className="space-y-10">
-          {/* Barra de contexto */}
-          <div className="entrar flex flex-wrap items-center gap-2 text-sm">
-            <span className="rounded-full border border-cian/40 bg-cian/10 px-3 py-1 font-medium text-cian-suave">{industriaLabel(entrada.industria)}</span>
-            {entrada.ciudad && <span className="rounded-full border border-white/10 px-3 py-1 text-[#dfe7ec]">{entrada.ciudad}</span>}
-            {entrada.mensaje && <span className="min-w-0 max-w-full truncate text-tenue sm:max-w-xl">“{entrada.mensaje}”</span>}
-            <div className="ml-auto flex items-center gap-2">
-              {segundos !== null && <span className="font-mono text-xs text-ok">✓ {segundos} s</span>}
-              {(comparador || (procesando && productos.length > 0)) && (
-                <button
-                  onClick={() => setVerCliente(true)}
-                  disabled={!comparador}
-                  className="boton-procesar px-4 py-2 text-sm disabled:opacity-40"
-                  title={comparador ? "" : "Disponible cuando terminen los insights"}
-                >
-                  {comparador ? "Así lo vería tu cliente →" : "Preparando vista del cliente…"}
-                </button>
-              )}
-            </div>
+  /* ───────────── Procesando / error ───────────── */
+  if (estado === "procesando" || estado === "error") {
+    return (
+      <main className="relative min-h-dvh overflow-hidden bg-negro text-white">
+        <Encabezado claro onInicio={nuevo} />
+        <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-96px)] max-w-5xl flex-col justify-center px-4 pb-20 sm:px-8">
+          <div className="mb-10 flex flex-wrap items-center gap-2 text-sm text-plata">
+            <span className="rounded-full border border-white/15 px-3 py-1">{entrada.ciudad || "Colombia"}</span>
+            {entrada.mensaje && <span className="min-w-0 max-w-full truncate sm:max-w-2xl">“{entrada.mensaje}”</span>}
           </div>
 
-          {/* Registro en vivo */}
-          {procesando || verRegistro ? (
-            <div className="space-y-2">
-              <Terminal lineas={lineas} activo={procesando} compacto={!procesando} />
-              {!procesando && (
-                <button onClick={() => setVerRegistro(false)} className="font-mono text-xs text-tenue hover:text-white">
-                  Ocultar registro ▲
-                </button>
+          {estado === "procesando" ? (
+            <>
+              <ProgresoCarro objetivo={avance.progreso} texto={avance.texto} terminado={terminado} onCompletado={() => setEstado("resultados")} />
+              {productos.length > 0 && (
+                <p className="mt-10 text-sm text-plata">
+                  {productos.length} carro{productos.length === 1 ? "" : "s"} encontrado{productos.length === 1 ? "" : "s"}
+                  {mercado ? " · mercado analizado" : ""}
+                </p>
               )}
-            </div>
+            </>
           ) : (
-            <button onClick={() => setVerRegistro(true)} className="font-mono text-xs text-tenue hover:text-white">
-              ▸ Ver registro del proceso ({lineas.length} pasos)
-            </button>
-          )}
-
-          {error && !productos.length && (
-            <div className="vidrio entrar border-peligro/40 p-5">
-              <div className="font-semibold text-peligro">No se pudo completar el análisis</div>
-              <p className="mt-1 text-sm text-[#dfe7ec]">{error}</p>
-              <button onClick={nuevo} className="boton-secundario mt-4 px-4 py-2 text-sm">
-                Volver y usar el Plan B
+            <div className="entrar max-w-2xl">
+              <div className="etiqueta text-rojo">No se pudo completar</div>
+              <h1 className="titulo mt-3 text-3xl sm:text-4xl">No logramos leer los carros</h1>
+              <p className="mt-4 leading-relaxed text-white/75">{error ?? "No se encontró información en las fuentes."}</p>
+              <p className="mt-4 text-sm text-plata">
+                Tip: si es Mercado Libre o TuCarro, abre la publicación, copia todo (Ctrl+A, Ctrl+C) y usa “Pegar texto manualmente”.
+              </p>
+              <button onClick={nuevo} className="boton-principal mt-8 px-8 py-4 text-sm">
+                Volver e intentar con el Plan B
               </button>
             </div>
           )}
+        </div>
+      </main>
+    );
+  }
 
-          {/* Resumen ejecutivo */}
-          {(insights || (productos.length > 0 && procesando)) && (
-            <Seccion etiqueta="Resumen ejecutivo" titulo="Lo que necesitas saber">
-              {insights ? (
-                <div className="vidrio entrar grid gap-4 p-5 sm:grid-cols-3 sm:p-6">
-                  {insights.resumen.map((r, i) => (
-                    <div key={i} className="entrar flex gap-3" style={{ animationDelay: `${i * 120}ms` }}>
-                      <span className="font-titulo text-3xl font-bold text-cian/70">{i + 1}</span>
-                      <p className="text-[0.98rem] leading-relaxed">{r}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <Esqueleto texto="Generando resumen ejecutivo…" />
-              )}
-            </Seccion>
-          )}
-
-          {/* Productos */}
-          {(productos.length > 0 || procesando) && (
-            <Seccion
-              etiqueta="Productos"
-              titulo={productos.length ? `${productos.length} producto(s) analizados` : "Leyendo productos…"}
-              extra={!productosListos && procesando ? <span className="font-mono text-xs text-cian">recibiendo en vivo…</span> : null}
-            >
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {productosOrdenados.map((p, i) => (
-                  <TarjetaProducto
-                    key={p.id}
-                    producto={p}
-                    insight={insightsPorId.get(p.id)}
-                    esperandoInsights={esperandoInsights}
-                    posicion={i}
-                    destacado={p.id === mejorId}
-                  />
-                ))}
-                {!productosListos && procesando && <Esqueleto alto="h-80" texto="Leyendo enlace…" />}
-              </div>
-            </Seccion>
-          )}
-
-          {/* Tabla comparativa */}
-          {productos.length > 1 && (
-            <Seccion etiqueta="Comparativa" titulo="Lado a lado">
-              <TablaComparativa productos={productosOrdenados} insights={insightsPorId} esperandoInsights={esperandoInsights} />
-            </Seccion>
-          )}
-
-          {/* Preguntas del cliente */}
-          {insights && insights.preguntasCliente.length > 0 && (
-            <Seccion etiqueta="Prepárate" titulo="Preguntas que se hace tu cliente antes de comprar">
-              <div className="grid gap-3 md:grid-cols-2">
-                {insights.preguntasCliente.map((q, i) => (
-                  <div key={i} className="vidrio entrar p-4" style={{ animationDelay: `${i * 70}ms` }}>
-                    <div className="font-semibold">“{q.pregunta}”</div>
-                    <p className="mt-1 text-sm text-tenue">{q.porQue}</p>
+  /* ───────────── Resultados ───────────── */
+  const specsTop = recomendado ? specsClave(recomendado) : [];
+  return (
+    <main>
+      {/* Héroe: el carro recomendado */}
+      <div className="relative overflow-hidden bg-negro text-white">
+        <Encabezado claro onInicio={nuevo} />
+        <div className="relative z-10 mx-auto grid max-w-7xl gap-10 px-4 pb-14 pt-4 sm:px-8 lg:grid-cols-[1fr_1.15fr] lg:items-center lg:pb-20">
+          <div className="revelar">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-plata">
+              <span className="rounded-full border border-white/15 px-3 py-1">{entrada.ciudad || "Colombia"}</span>
+              {segundos !== null && <span>Análisis en {segundos} s</span>}
+            </div>
+            <div className="etiqueta mt-8 text-rojo">{insights ? "Recomendado para tu cliente" : "Carros analizados"}</div>
+            {recomendado && (
+              <>
+                <h1 className="titulo mt-3 text-4xl sm:text-5xl">{recomendado.nombre}</h1>
+                <div className="mt-5 flex flex-wrap items-center gap-5">
+                  <div className="cifra text-3xl font-bold sm:text-4xl">
+                    {recomendado.precio !== null ? formatoMoneda(recomendado.precio, recomendado.moneda) : <span className="text-xl text-plata">Precio: Sin dato</span>}
                   </div>
-                ))}
-              </div>
-            </Seccion>
-          )}
-
-          {/* Mercado */}
-          {(mercado || (procesando && productos.length > 0)) && (
-            <Seccion etiqueta="Investigación de mercado" titulo="Cómo está el mercado">
-              {mercado ? <PanelMercado mercado={mercado} /> : <Esqueleto alto="h-40" texto="Investigando el mercado…" />}
-            </Seccion>
+                  {insightRecomendado && <AnilloPuntuacion valor={insightRecomendado.puntuacion} tamaño={70} oscuro />}
+                </div>
+                {insightRecomendado && (
+                  <div className="mt-4">
+                    <InsigniaMercado dato={insightRecomendado.precioVsMercado} />
+                  </div>
+                )}
+                {specsTop.length > 0 && (
+                  <dl className="mt-8 grid max-w-md grid-cols-3 gap-4 border-t border-white/15 pt-6">
+                    {specsTop.map((s) => (
+                      <div key={s.clave} className="min-w-0">
+                        <dd className="cifra break-words text-lg font-bold leading-tight">{s.valor}</dd>
+                        <dt className="mt-1 text-xs text-plata">{s.clave}</dt>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+                {insightRecomendado && <p className="mt-6 max-w-lg leading-relaxed text-white/75">Ideal para: {insightRecomendado.idealPara}</p>}
+              </>
+            )}
+            <div className="mt-9 flex flex-wrap gap-3">
+              {comparador && (
+                <button onClick={() => setVerCliente(true)} className="boton-principal px-7 py-4 text-xs">
+                  Así lo vería tu cliente →
+                </button>
+              )}
+              <button onClick={nuevo} className="boton-borde px-7 py-4 text-xs text-white hover:bg-white hover:text-tinta">
+                Nuevo análisis
+              </button>
+            </div>
+          </div>
+          {recomendado && (
+            <div className="revelar" style={{ animationDelay: "150ms" }}>
+              <FotoProducto
+                imagenes={recomendado.imagenes}
+                alt={recomendado.nombre}
+                sizes="(max-width: 1024px) 100vw, 55vw"
+                className="aspect-[16/10] w-full rounded-[14px]"
+                prioridad
+              />
+            </div>
           )}
         </div>
-      )}
+      </div>
+
+      <div className="mx-auto max-w-7xl space-y-20 px-4 py-16 sm:px-8 sm:py-20">
+        {insights && (
+          <Seccion etiqueta="Resumen ejecutivo" titulo="Lo que necesitas saber">
+            <div className="grid gap-px overflow-hidden rounded-[14px] border border-linea bg-linea md:grid-cols-3">
+              {insights.resumen.map((r, i) => (
+                <div key={i} className="entrar bg-white p-6 sm:p-8" style={{ animationDelay: `${i * 120}ms` }}>
+                  <div className="cifra text-4xl font-bold text-rojo">{String(i + 1).padStart(2, "0")}</div>
+                  <p className="mt-4 text-[1.02rem] leading-relaxed">{r}</p>
+                </div>
+              ))}
+            </div>
+          </Seccion>
+        )}
+
+        <Seccion etiqueta="Vitrina" titulo={`${productos.length} carro${productos.length === 1 ? "" : "s"} analizado${productos.length === 1 ? "" : "s"}`}>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {productosOrdenados.map((p, i) => (
+              <TarjetaProducto key={p.id} producto={p} insight={insightsPorId.get(p.id)} posicion={i} destacado={i === 0 && !!insights} />
+            ))}
+          </div>
+        </Seccion>
+
+        {productos.length > 1 && (
+          <Seccion etiqueta="Comparativa" titulo="Compara lado a lado">
+            <TablaComparativa productos={productosOrdenados} insights={insightsPorId} />
+          </Seccion>
+        )}
+
+        {insights && insights.preguntasCliente.length > 0 && (
+          <Seccion etiqueta="Prepárate" titulo="Lo que preguntará tu cliente">
+            <div className="grid gap-4 md:grid-cols-2">
+              {insights.preguntasCliente.map((q, i) => (
+                <div key={i} className="tarjeta entrar flex gap-4 p-5" style={{ animationDelay: `${i * 60}ms` }}>
+                  <span className="cifra text-sm font-bold text-rojo">{String(i + 1).padStart(2, "0")}</span>
+                  <div>
+                    <div className="font-semibold">{q.pregunta}</div>
+                    <p className="mt-1 text-sm text-gris">{q.porQue}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Seccion>
+        )}
+
+        {mercado && (
+          <Seccion etiqueta="Mercado" titulo={`El mercado en ${mercado.ciudad}`}>
+            <PanelMercado mercado={mercado} />
+          </Seccion>
+        )}
+
+        {avisos.length > 0 && (
+          <details className="tarjeta p-5 text-sm">
+            <summary className="cursor-pointer font-semibold">Avisos del análisis ({avisos.length})</summary>
+            <ul className="mt-3 space-y-1.5 text-gris">
+              {avisos.map((a, i) => (
+                <li key={i} className={a.nivel === "error" ? "text-rojo" : ""}>
+                  • {a.texto}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </div>
+
+      <footer className="border-t border-linea bg-white">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-8 sm:px-8">
+          <Marca conLema={false} />
+          <p className="text-xs text-gris">Datos tomados de las fuentes indicadas. Lo que no se encontró aparece como “Sin dato”.</p>
+        </div>
+      </footer>
 
       {verCliente && comparador && <EditorComparador config={comparador} onCerrar={() => setVerCliente(false)} />}
-    </div>
+    </main>
   );
 }

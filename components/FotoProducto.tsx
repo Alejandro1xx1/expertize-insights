@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import Carro from "./Carro";
 
 /**
  * Foto optimizada con next/image y carga diferida. Si el optimizador no puede
@@ -36,10 +37,10 @@ export default function FotoProducto({
   };
 
   return (
-    <div className={`relative overflow-hidden bg-[#0b1017] ${className}`}>
+    <div className={`relative overflow-hidden bg-[#e9e9e6] ${className}`}>
       {src ? (
         <>
-          {!cargada && <div className="escaneo absolute inset-0" aria-hidden />}
+          {!cargada && <div className="cargando absolute inset-0" aria-hidden />}
           {directa ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -65,17 +66,13 @@ export default function FotoProducto({
           )}
         </>
       ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-tenue">
-          <svg viewBox="0 0 24 24" className="h-7 w-7 opacity-60" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="3" y="5" width="18" height="14" rx="2" />
-            <circle cx="9" cy="10" r="1.6" />
-            <path d="m21 16-5-5-8 8" />
-          </svg>
-          <span className="font-mono text-xs">Sin foto</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-gris">
+          <Carro acabado="grafito" className="w-1/2 max-w-40 opacity-25" />
+          <span className="text-xs">Sin foto</span>
         </div>
       )}
       {imagenes.length > 1 && src && (
-        <div className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 font-mono text-[0.65rem] text-tenue">
+        <div className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[0.65rem] text-white">
           {indice + 1}/{imagenes.length}
         </div>
       )}

@@ -7,13 +7,13 @@ export function codigoFuente(f: Producto["fuente"]): string {
 }
 
 /** Indicador pequeño de qué fuente salió un dato. */
-export default function Fuente({ fuente, conTexto = false }: { fuente: Producto["fuente"]; conTexto?: boolean }) {
+export default function Fuente({ fuente, conTexto = false, oscuro = false }: { fuente: Producto["fuente"]; conTexto?: boolean; oscuro?: boolean }) {
   const contenido = (
     <>
-      <span className="rounded bg-cian/10 px-1 py-px font-mono text-[0.62rem] font-semibold text-cian">
+      <span className={`cifra rounded px-1.5 py-0.5 text-[0.62rem] font-bold ${oscuro ? "bg-white/90 text-tinta" : "bg-tinta text-white"}`}>
         {codigoFuente(fuente)}
       </span>
-      {conTexto && <span className="truncate font-mono text-[0.7rem] text-tenue">{fuente.etiqueta}</span>}
+      {conTexto && <span className="truncate text-[0.72rem] text-gris">{fuente.etiqueta}</span>}
     </>
   );
   const clase = "inline-flex max-w-full items-center gap-1.5 align-middle";
@@ -29,5 +29,5 @@ export default function Fuente({ fuente, conTexto = false }: { fuente: Producto[
 }
 
 export function SinDato() {
-  return <span className="font-mono text-xs text-tenue/70">Sin dato</span>;
+  return <span className="text-sm text-gris/80">Sin dato</span>;
 }

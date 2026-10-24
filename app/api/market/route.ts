@@ -1,20 +1,18 @@
 import { describeError, getClient } from "@/lib/claude";
 import { claveMercado, obtenerMercado } from "@/lib/market";
-import { INDUSTRIAS } from "@/lib/schemas";
 import { conTimeout, crearSSE } from "@/lib/sse";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-/** Genera (o lee de caché) la investigación de mercado de una industria + ciudad. Usado por /admin. */
+/** Genera (o lee de caché) la investigación del mercado de carros de una ciudad. Usado por /admin. */
 export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
-  const industria = params.get("industria") ?? "";
   const ciudad = (params.get("ciudad") ?? "").slice(0, 80);
   const forzar = params.get("forzar") === "1";
-  if (!INDUSTRIAS.some((i) => i.id === industria) || !ciudad) {
-    return Response.json({ error: "Industria o ciudad inválida." }, { status: 400 });
+  if (!ciudad.trim()) {
+    return Response.json({ error: "Falta la ciudad." }, { status: 400 });
   }
 
   const controlador = new AbortController();
@@ -26,8 +24,8 @@ export async function GET(req: Request) {
   (async () => {
     try {
       getClient();
-      log(`Archivo destino: data/market-cache/${claveMercado(industria, ciudad)}.json`);
-      const mercado = await obtenerMercado(industria, ciudad, "", conTimeout(controlador.signal, 240_000), {
+      log(`Archivo destino: data/market-cache/${claveMercado(ciudad)}.json`);
+      const mercado = await obtenerMercado(ciudad, conTimeout(controlador.signal, 240_000), {
         forzar,
         onOrigen: (o) => log(o === "en-vivo" ? "Investigando en vivo con búsqueda web…" : `Cargado desde ${o}.`),
         onActivity: (a) => {

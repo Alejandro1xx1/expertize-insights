@@ -1,10 +1,5 @@
 import { obtenerPistas, type Pistas } from "./hints";
-import {
-  ExtraccionSchema,
-  type Extraccion,
-  type Producto,
-  industriaLabel,
-} from "./schemas";
+import { ExtraccionSchema, type Extraccion, type Producto } from "./schemas";
 import { parseStructured, runWithTools, validateOrRepair, WEB_FETCH, type ToolActivity } from "./claude";
 
 const MAX_POR_FUENTE = 12;
@@ -14,14 +9,15 @@ const REGLAS = `Reglas estrictas:
 - "precio": número sin separadores (ej. 98000000) SOLO si el precio aparece explícito. "precioTexto": el precio copiado tal cual aparece (ej. "$98.000.000"). Si no hay precio, ambos null.
 - "moneda": código ISO (COP, USD…) deducido del sitio; null si no se puede saber.
 - "imagenes": URLs absolutas de fotos del producto que aparezcan en la página o en las pistas (máximo 6). Nunca construyas ni adivines URLs.
-- "atributos": pares clave/valor cortos y útiles para comparar (ej. Año, Kilometraje, Motor, Transmisión, Área, Habitaciones, Baños, Parqueaderos, Estrato, Cilindraje, Ubicación). Claves en español con mayúscula inicial, valores cortos con unidades.
+- "nombre": marca, modelo, versión y año si aparecen (ej. "Mazda CX-30 Touring 2022").
+- "atributos": pares clave/valor cortos para comparar carros. Usa EXACTAMENTE estas claves cuando el dato exista: Año, Kilometraje, Motor, Potencia, Transmisión, Combustible, Tracción, Carrocería, Color, Puertas, Airbags, Ubicación, Placa, Único dueño, Garantía. Puedes agregar otras relevantes (ej. Consumo, Equipamiento destacado). Valores cortos con unidades (ej. "45.000 km", "2.0 L", "Automática").
 - "enlace": URL exacta del producto si se conoce (en catálogos, el enlace de cada ítem); si no, null.
 - Si la fuente es un catálogo o listado, "tipo": "catalogo" y extrae hasta ${MAX_POR_FUENTE} productos. Si es una ficha individual, "tipo": "producto". Si no hay productos, "tipo": "sin_productos" y explica en "nota".`;
 
 const FORMATO = `Responde ÚNICAMENTE con un bloque \`\`\`json con esta forma exacta:
 {"tipo":"producto|catalogo|sin_productos","productos":[{"nombre":string,"precio":number|null,"moneda":string|null,"precioTexto":string|null,"imagenes":string[],"atributos":[{"clave":string,"valor":string}],"enlace":string|null}],"nota":string|null}`;
 
-type Contexto = { industria: string; ciudad: string; mensaje: string };
+type Contexto = { ciudad: string; mensaje: string };
 
 export type ResultadoFuente = {
   productos: Omit<Producto, "id">[];
@@ -112,7 +108,7 @@ export async function extraerDeEnlace(
   const pistas = await obtenerPistas(url);
 
   const { texto, evidencia, lecturasExitosas } = await runWithTools({
-    system: `Eres un analista comercial que extrae fichas de producto de páginas de venta en Colombia (industria: ${industriaLabel(ctx.industria)}). Respondes en español.\n\n${REGLAS}\n\n${FORMATO}`,
+    system: `Eres un analista comercial que extrae fichas de carros (nuevos y usados) de páginas de venta en Colombia. Respondes en español.\n\n${REGLAS}\n\n${FORMATO}`,
     prompt: `Enlace ${indice}: ${url}
 
 Si las pistas de abajo ya traen la información completa del producto (nombre, precio, características), úsalas directamente. Si están incompletas o vacías, lee la página con web_fetch usando la URL exacta (máximo 2 lecturas).
@@ -160,7 +156,7 @@ export async function extraerDeTexto(
 ): Promise<ResultadoFuente> {
   const avisos: string[] = [];
   const ext = await parseStructured({
-    system: `Eres un analista comercial que extrae fichas de producto de texto pegado por un vendedor (industria: ${industriaLabel(ctx.industria)}). Respondes en español.\n\n${REGLAS}`,
+    system: `Eres un analista comercial que extrae fichas de carros de texto pegado por un vendedor (puede ser una página copiada completa, con menús y textos sobrantes: ignóralos). Respondes en español.\n\n${REGLAS}`,
     prompt: `Texto pegado manualmente:\n\n${texto.slice(0, 40_000)}`,
     schema: ExtraccionSchema,
     signal,
@@ -179,7 +175,7 @@ export async function extraerDeFilas(
 ): Promise<ResultadoFuente> {
   const avisos: string[] = [];
   const ext = await parseStructured({
-    system: `Eres un analista comercial que convierte inventarios (Excel/CSV) en fichas de producto (industria: ${industriaLabel(ctx.industria)}). Respondes en español.\n\n${REGLAS}\n- Es un inventario: "tipo": "catalogo". Si hay más de ${MAX_POR_FUENTE} filas, elige las ${MAX_POR_FUENTE} que mejor encajen con el contexto del cliente.`,
+    system: `Eres un analista comercial que convierte inventarios de carros (Excel/CSV) en fichas de producto. Respondes en español.\n\n${REGLAS}\n- Es un inventario: "tipo": "catalogo". Si hay más de ${MAX_POR_FUENTE} filas, elige las ${MAX_POR_FUENTE} que mejor encajen con el contexto del cliente.`,
     prompt: `Contexto del cliente: ${ctx.mensaje || "(sin contexto)"} · Ciudad: ${ctx.ciudad || "(sin ciudad)"}\n\nInventario (${nombreArchivo}):\n${csv.slice(0, 60_000)}`,
     schema: ExtraccionSchema,
     signal,

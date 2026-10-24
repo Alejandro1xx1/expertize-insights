@@ -2,21 +2,7 @@ import { z } from "zod/v4";
 
 /* ───────────── Catálogo común ───────────── */
 
-export const INDUSTRIAS = [
-  { id: "carros", label: "Carros" },
-  { id: "motos", label: "Motos" },
-  { id: "vivienda-venta", label: "Vivienda venta" },
-  { id: "vivienda-arriendo", label: "Vivienda arriendo" },
-  { id: "otro", label: "Otro" },
-] as const;
-
-export type IndustriaId = (typeof INDUSTRIAS)[number]["id"];
-
-export const CIUDADES_CACHE = ["Medellín", "Bogotá"] as const;
-
-export function industriaLabel(id: string): string {
-  return INDUSTRIAS.find((i) => i.id === id)?.label ?? id;
-}
+export const CIUDADES_CACHE = ["Medellín", "Bogotá", "Cali", "Barranquilla"] as const;
 
 /* ───────────── Productos ───────────── */
 
@@ -228,6 +214,7 @@ export type LogNivel = "info" | "ok" | "warn" | "error" | "dato";
 
 export type EventoStream =
   | { tipo: "log"; nivel: LogNivel; texto: string }
+  | { tipo: "avance"; progreso: number; texto: string }
   | { tipo: "producto"; producto: Producto }
   | { tipo: "productos_listos"; total: number }
   | { tipo: "mercado"; mercado: Mercado }
