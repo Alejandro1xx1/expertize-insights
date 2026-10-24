@@ -88,6 +88,15 @@ export const InsightsSchema = z.object({
       id: z.string(),
       puntuacion: z.number(),
       justificacion: z.string(),
+      titular: z.string(),
+      dimensiones: z.object({
+        seguridad: z.number(),
+        confort: z.number(),
+        desempeno: z.number(),
+        eficiencia: z.number(),
+        tecnologia: z.number(),
+        calidadPrecio: z.number(),
+      }),
       pros: z.array(z.string()),
       contras: z.array(z.string()),
       idealPara: z.string(),
@@ -103,6 +112,17 @@ export const InsightsSchema = z.object({
 });
 
 export type InsightsModelo = z.infer<typeof InsightsSchema>;
+
+export const DIMENSIONES = [
+  { id: "seguridad", label: "Seguridad" },
+  { id: "confort", label: "Confort" },
+  { id: "desempeno", label: "Desempeño" },
+  { id: "eficiencia", label: "Eficiencia" },
+  { id: "tecnologia", label: "Tecnología" },
+  { id: "calidadPrecio", label: "Calidad-precio" },
+] as const;
+
+export type DimensionId = (typeof DIMENSIONES)[number]["id"];
 
 export type PrecioVsMercado = {
   porcentaje: number | null;

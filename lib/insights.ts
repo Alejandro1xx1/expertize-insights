@@ -66,6 +66,8 @@ Reglas estrictas:
 - "resumen": exactamente 3 frases cortas (una por línea) para un gerente comercial.
 - "productos": uno por cada id recibido, con el mismo id.
   - "puntuacion": entero 0–100 según qué tan bien encaja con el contexto del mensaje (presupuesto, uso, perfil). Penaliza datos faltantes clave.
+  - "titular": una frase de máximo 14 palabras que venda el carro (ej. "La SUV familiar con más equipamiento por menos de 100 millones").
+  - "dimensiones": evaluación de 1 a 10 (enteros) en seguridad, confort, desempeno (motor/potencia), eficiencia (consumo y costo de uso), tecnologia (equipamiento) y calidadPrecio (lo que ofrece frente a su precio y al mercado). Basa la nota en los atributos entregados y en lo que se sabe públicamente del modelo y versión; si faltan datos, usa una nota prudente (5) en lugar de inventar fortalezas.
   - "pros" y "contras": 2 a 4 cada uno, concretos, basados en datos.
   - "idealPara": perfil de comprador en una frase.
   - "referenciaMercado": elige el rango de la investigación de mercado que corresponde a ese producto y copia su "promedio" (o el punto medio entre min y max si no hay promedio) y su moneda, en la MISMA unidad que el precio del producto (usa el segmento que coincida en tipo de carro, gama y antigüedad; explica la elección en "metodo"). Si no hay un rango comparable, todo en null.
@@ -88,6 +90,8 @@ ${mercadoParaModelo(mercado)}`,
       id: p.id,
       puntuacion: 0,
       justificacion: "Sin dato",
+      titular: "",
+      dimensiones: { seguridad: 0, confort: 0, desempeno: 0, eficiencia: 0, tecnologia: 0, calidadPrecio: 0 },
       pros: [],
       contras: [],
       idealPara: "Sin dato",
@@ -96,6 +100,9 @@ ${mercadoParaModelo(mercado)}`,
     return {
       ...x,
       puntuacion: Math.max(0, Math.min(100, Math.round(x.puntuacion))),
+      dimensiones: Object.fromEntries(
+        Object.entries(x.dimensiones).map(([k, v]) => [k, Math.max(0, Math.min(10, Math.round(v)))]),
+      ) as InsightProducto["dimensiones"],
       precioVsMercado: calcularPrecioVsMercado(p, x.referenciaMercado),
     };
   });

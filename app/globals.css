@@ -260,3 +260,16 @@ body {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Zoom lento sobre la foto de portada */
+.zoom-lento {
+  animation: zoom-lento 22s ease-in-out infinite alternate;
+}
+@keyframes zoom-lento {
+  from {
+    transform: scale(1.04);
+  }
+  to {
+    transform: scale(1.14) translateX(-1.5%);
+  }
+}

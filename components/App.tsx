@@ -7,12 +7,17 @@ import type { ComparadorConfig, EventoStream, InsightProducto, Insights, LogNive
 import { leerSSE } from "@/lib/sse-client";
 import AnilloPuntuacion from "./AnilloPuntuacion";
 import EditorComparador from "./EditorComparador";
-import EscenaHero from "./EscenaHero";
+import FichaCarro from "./FichaCarro";
 import FormularioEntrada, { ENTRADA_VACIA, type DatosEntrada } from "./FormularioEntrada";
 import FotoProducto from "./FotoProducto";
+import BarrasMercado from "./graficas/BarrasMercado";
+import Contador from "./graficas/Contador";
+import MapaValor from "./graficas/MapaValor";
+import Ranking from "./graficas/Ranking";
 import InsigniaMercado from "./InsigniaMercado";
 import Marca from "./Marca";
 import PanelMercado from "./PanelMercado";
+import PortadaFoto from "./PortadaFoto";
 import ProgresoCarro from "./ProgresoCarro";
 import TablaComparativa from "./TablaComparativa";
 import TarjetaProducto, { specsClave } from "./TarjetaProducto";
@@ -20,12 +25,13 @@ import TarjetaProducto, { specsClave } from "./TarjetaProducto";
 type Estado = "entrada" | "procesando" | "resultados" | "error";
 type Linea = { nivel: LogNivel; texto: string };
 
-function Seccion({ titulo, etiqueta, children }: { titulo: string; etiqueta: string; children: React.ReactNode }) {
+function Seccion({ titulo, etiqueta, children, id, ayuda }: { titulo: string; etiqueta: string; children: React.ReactNode; id?: string; ayuda?: string }) {
   return (
-    <section className="entrar space-y-6">
+    <section id={id} className="entrar scroll-mt-6 space-y-6">
       <div>
         <div className="etiqueta text-rojo">{etiqueta}</div>
         <h2 className="titulo mt-2 text-2xl sm:text-3xl">{titulo}</h2>
+        {ayuda && <p className="mt-2 max-w-2xl text-sm text-gris">{ayuda}</p>}
       </div>
       {children}
     </section>
@@ -63,6 +69,8 @@ export default function App() {
   const [avance, setAvance] = useState({ progreso: 0, texto: "Arrancando motores…" });
   const [terminado, setTerminado] = useState(false);
   const [verCliente, setVerCliente] = useState(false);
+  const [fichaId, setFichaId] = useState<string | null>(null);
+  const [pedidoComparar, setPedidoComparar] = useState<{ id: string; n: number } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const productosRef = useRef(0);
 
@@ -77,6 +85,16 @@ export default function App() {
   const recomendado = productosOrdenados[0];
   const insightRecomendado = recomendado ? insightsPorId.get(recomendado.id) : undefined;
   const avisos = lineas.filter((l) => l.nivel === "warn" || l.nivel === "error");
+  const precios = productos.map((p) => p.precio).filter((v): v is number => v !== null);
+  const monedaPrincipal = productos.find((p) => p.moneda)?.moneda ?? "COP";
+  const oportunidades = (insights?.productos ?? []).filter((x) => x.precioVsMercado.estado === "oportunidad").length;
+  const fichaProducto = fichaId ? productos.find((p) => p.id === fichaId) : undefined;
+
+  function compararModelo(id: string) {
+    setFichaId(null);
+    setPedidoComparar((p) => ({ id, n: (p?.n ?? 0) + 1 }));
+    setTimeout(() => document.getElementById("comparar")?.scrollIntoView({ behavior: "smooth" }), 80);
+  }
 
   const onEvento = useCallback((e: EventoStream) => {
     switch (e.tipo) {
@@ -158,6 +176,7 @@ export default function App() {
     abortRef.current?.abort();
     setEstado("entrada");
     setVerCliente(false);
+    setFichaId(null);
     window.scrollTo({ top: 0 });
   }
 
@@ -165,8 +184,8 @@ export default function App() {
   if (estado === "entrada") {
     return (
       <main>
-        <div className="relative min-h-[620px] overflow-hidden bg-negro sm:min-h-[720px]">
-          <EscenaHero />
+        <div className="relative min-h-[620px] overflow-hidden bg-negro sm:min-h-[760px]">
+          <PortadaFoto />
           <Encabezado claro onInicio={nuevo} />
           <div className="relative z-10 mx-auto max-w-7xl px-4 pb-48 pt-10 sm:px-8 sm:pt-20">
             <div className="etiqueta entrar text-plata">Análisis comercial en vivo</div>
@@ -266,6 +285,11 @@ export default function App() {
               </>
             )}
             <div className="mt-9 flex flex-wrap gap-3">
+              {recomendado && (
+                <button onClick={() => setFichaId(recomendado.id)} className="boton-borde px-7 py-4 text-xs text-white hover:bg-white hover:text-tinta">
+                  Ver ficha completa
+                </button>
+              )}
               {comparador && (
                 <button onClick={() => setVerCliente(true)} className="boton-principal px-7 py-4 text-xs">
                   Así lo vería tu cliente →
@@ -304,17 +328,68 @@ export default function App() {
           </Seccion>
         )}
 
+        <section className="entrar grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-linea bg-linea lg:grid-cols-4">
+          {[
+            { etiqueta: "Carros analizados", valor: productos.length, formato: (n: number) => String(Math.round(n)) },
+            {
+              etiqueta: "Precio promedio",
+              valor: precios.length ? precios.reduce((a, b) => a + b, 0) / precios.length : 0,
+              formato: (n: number) => (precios.length ? formatoMoneda(n, monedaPrincipal) : "Sin dato"),
+            },
+            {
+              etiqueta: "Diferencia de precio",
+              valor: precios.length > 1 ? Math.max(...precios) - Math.min(...precios) : 0,
+              formato: (n: number) => (precios.length > 1 ? formatoMoneda(n, monedaPrincipal) : "Sin dato"),
+            },
+            { etiqueta: "Oportunidades de precio", valor: oportunidades, formato: (n: number) => (insights ? String(Math.round(n)) : "Sin dato") },
+          ].map((k, i) => (
+            <div key={k.etiqueta} className="bg-white p-5 sm:p-7" style={{ animationDelay: `${i * 80}ms` }}>
+              <div className="text-xs text-gris">{k.etiqueta}</div>
+              <Contador valor={k.valor} formato={k.formato} className="cifra mt-2 block text-2xl font-bold sm:text-3xl" />
+            </div>
+          ))}
+        </section>
+
+        {insights && (
+          <Seccion etiqueta="Análisis visual" titulo="Quién gana y por qué" ayuda="Pasa el mouse sobre las gráficas para ver el detalle. Haz clic en un carro del ranking para abrir su ficha.">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="tarjeta p-6">
+                <h3 className="cifra font-bold">Ranking según tu cliente</h3>
+                <p className="mb-5 mt-1 text-xs text-gris">Puntuación de 0 a 100 frente al contexto que escribiste.</p>
+                <Ranking productos={productos} insights={insightsPorId} onSeleccionar={setFichaId} />
+              </div>
+              <div className="tarjeta p-6">
+                <h3 className="cifra font-bold">Precio frente al mercado</h3>
+                <p className="mb-5 mt-1 text-xs text-gris">Diferencia con el precio promedio de su segmento en {mercado?.ciudad ?? entrada.ciudad}.</p>
+                <BarrasMercado productos={productosOrdenados} insights={insightsPorId} />
+              </div>
+            </div>
+            <div className="tarjeta p-6">
+              <h3 className="cifra font-bold">Mapa de valor: precio vs. kilometraje</h3>
+              <p className="mb-4 mt-1 text-xs text-gris">El punto rojo es el recomendado. Si falta el kilometraje de algún carro, no aparece aquí.</p>
+              <MapaValor productos={productos} destacadoId={insights ? (recomendado?.id ?? null) : null} />
+            </div>
+          </Seccion>
+        )}
+
         <Seccion etiqueta="Vitrina" titulo={`${productos.length} carro${productos.length === 1 ? "" : "s"} analizado${productos.length === 1 ? "" : "s"}`}>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {productosOrdenados.map((p, i) => (
-              <TarjetaProducto key={p.id} producto={p} insight={insightsPorId.get(p.id)} posicion={i} destacado={i === 0 && !!insights} />
+              <TarjetaProducto
+                key={p.id}
+                producto={p}
+                insight={insightsPorId.get(p.id)}
+                posicion={i}
+                destacado={i === 0 && !!insights}
+                onAbrir={() => setFichaId(p.id)}
+              />
             ))}
           </div>
         </Seccion>
 
         {productos.length > 1 && (
-          <Seccion etiqueta="Comparativa" titulo="Compara lado a lado">
-            <TablaComparativa productos={productosOrdenados} insights={insightsPorId} />
+          <Seccion id="comparar" etiqueta="Comparador" titulo="Compara frente a frente">
+            <TablaComparativa productos={productosOrdenados} insights={insightsPorId} pedido={pedidoComparar} onAbrirFicha={setFichaId} />
           </Seccion>
         )}
 
@@ -362,6 +437,9 @@ export default function App() {
       </footer>
 
       {verCliente && comparador && <EditorComparador config={comparador} onCerrar={() => setVerCliente(false)} />}
+      {fichaProducto && (
+        <FichaCarro producto={fichaProducto} insight={insightsPorId.get(fichaProducto.id)} onCerrar={() => setFichaId(null)} onComparar={compararModelo} />
+      )}
     </main>
   );
 }

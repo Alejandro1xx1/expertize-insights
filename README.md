@@ -37,6 +37,23 @@ Herramienta de ventas de **carros** para usar **en vivo frente a prospectos** (c
 - **Tipografía:** Archivo expandida en mayúsculas para títulos, al estilo automotriz, e Inter para el texto.
 - **Animación:** escena nocturna con ciudad en movimiento y un carro (dibujado en SVG, sin fotos de terceros) con ruedas girando y faros encendidos.
 
+### Gráficas y análisis
+- **Panorama:** carros analizados, precio promedio, diferencia de precio y oportunidades, con números que cuentan al aparecer.
+- **Ranking según tu cliente:** barras de puntuación de 0 a 100 (clic para abrir la ficha).
+- **Precio frente al mercado:** barras divergentes; champán = por debajo del promedio (oportunidad) y rojo = por encima.
+- **Mapa de valor:** precio contra kilometraje; la zona verde es "menos km y menor precio".
+- **Ficha de cada carro:** galería, especificaciones con íconos, radar de características (seguridad, confort, desempeño, eficiencia, tecnología y calidad-precio, de 1 a 10), perfil ideal, ventajas y puntos de mejora. Las notas de 1 a 10 son una evaluación estimada por la IA con la ficha y lo que se sabe públicamente del modelo.
+- **Comparador frente a frente:** eliges hasta 4 modelos con chips (+ Añadir modelo / ✕) y ves el radar superpuesto (hasta 3) y una tabla con el mejor valor de cada fila en verde.
+- Todas las gráficas se animan al entrar en pantalla y muestran el detalle al pasar el mouse.
+
+### Foto de portada
+La portada muestra una foto real de un carro. Para usar **tu propia foto** (recomendado, por ejemplo una de tu concesionario o de un banco de imágenes con licencia comercial como Unsplash o Pexels):
+1. Nómbrala exactamente `hero.jpg` (horizontal, ideal 2400 px de ancho, el carro hacia la derecha).
+2. En GitHub, entra a la carpeta `public`, presiona **Add file → Upload files**, súbela y presiona **Commit changes**.
+3. Vercel la publica solo en 1–2 minutos.
+
+Si no hay `hero.jpg`, la app intenta cargar fotos de Unsplash; si tampoco cargan, muestra la escena animada del carro.
+
 ### Pantallas
 | Ruta | Para qué |
 |---|---|

@@ -31,11 +31,13 @@ export default function TarjetaProducto({
   insight,
   posicion,
   destacado,
+  onAbrir,
 }: {
   producto: Producto;
   insight: InsightProducto | undefined;
   posicion: number;
   destacado: boolean;
+  onAbrir?: () => void;
 }) {
   const specs = specsClave(producto);
   const resto = producto.atributos.filter((a) => !specs.includes(a)).slice(0, 6);
@@ -43,7 +45,14 @@ export default function TarjetaProducto({
   return (
     <article className="tarjeta entrar flex flex-col overflow-hidden" style={{ animationDelay: `${Math.min(posicion, 6) * 80}ms` }}>
       <div className="relative">
-        <FotoProducto imagenes={producto.imagenes} alt={producto.nombre} className="aspect-[16/10] w-full" prioridad={posicion < 3} />
+        <button type="button" onClick={onAbrir} className="block w-full overflow-hidden" aria-label={`Ver ficha de ${producto.nombre}`}>
+          <FotoProducto
+            imagenes={producto.imagenes}
+            alt={producto.nombre}
+            className="aspect-[16/10] w-full transition-transform duration-700 hover:scale-[1.04]"
+            prioridad={posicion < 3}
+          />
+        </button>
         {destacado && <div className="etiqueta absolute left-0 top-4 bg-rojo px-3 py-1.5 !text-[0.62rem] text-white">Recomendado</div>}
         <div className="absolute right-3 top-3">
           <Fuente fuente={producto.fuente} oscuro />
@@ -64,6 +73,7 @@ export default function TarjetaProducto({
         <div className="mt-4">
           <InsigniaMercado dato={insight?.precioVsMercado} />
         </div>
+        {insight?.titular && <p className="mt-3 text-sm leading-snug text-gris">{insight.titular}</p>}
 
         {specs.length > 0 && (
           <dl className="mt-6 grid grid-cols-3 divide-x divide-linea border-y border-linea py-4">
@@ -119,16 +129,18 @@ export default function TarjetaProducto({
           </div>
         )}
 
-        {producto.enlace && (
-          <a
-            href={producto.enlace}
-            target="_blank"
-            rel="noreferrer"
-            className="etiqueta mt-auto inline-flex items-center gap-1 pt-6 !text-[0.62rem] text-tinta hover:text-rojo"
-          >
-            Ver publicación original ↗
-          </a>
-        )}
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-6">
+          {onAbrir && (
+            <button type="button" onClick={onAbrir} className="etiqueta rounded-[10px] bg-tinta px-4 py-3 !text-[0.6rem] text-white hover:bg-black">
+              Ver ficha completa
+            </button>
+          )}
+          {producto.enlace && (
+            <a href={producto.enlace} target="_blank" rel="noreferrer" className="etiqueta !text-[0.6rem] text-tinta hover:text-rojo">
+              Publicación ↗
+            </a>
+          )}
+        </div>
       </div>
     </article>
   );
