@@ -439,7 +439,7 @@ export default function App() {
       <div className="mx-auto max-w-7xl space-y-20 px-5 py-16 sm:space-y-28 sm:px-8 sm:py-24">
         {/* ── Podio ── */}
         <Seccion etiqueta="Podio" titulo={insights ? "Top 3 para este cliente" : "Carros encontrados"}>
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="space-y-5">
             {top3.map((p, i) => (
               <TarjetaCarro key={p.id} producto={p} insight={insightsPorId.get(p.id)} posicion={i} onAbrir={() => setFichaId(p.id)} />
             ))}
@@ -485,7 +485,7 @@ export default function App() {
         {/* ── El resto ── */}
         {resto.length > 0 && (
           <Seccion etiqueta="Más opciones" titulo="El resto de la vitrina">
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="space-y-5">
               {resto.map((p, i) => (
                 <TarjetaCarro key={p.id} producto={p} insight={insightsPorId.get(p.id)} posicion={i + 3} onAbrir={() => setFichaId(p.id)} />
               ))}
