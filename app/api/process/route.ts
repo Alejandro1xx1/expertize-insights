@@ -4,7 +4,7 @@ import { extraerDeEnlace, extraerDeFilas, extraerDeTexto, type ResultadoFuente }
 import { urlValida } from "@/lib/hints";
 import { claveDuplicado } from "@/lib/coherencia";
 import { formatoMoneda } from "@/lib/format";
-import { generarComparador, generarInsights } from "@/lib/insights";
+import { generarInsights } from "@/lib/insights";
 import { obtenerMercado } from "@/lib/market";
 import type { Mercado, Producto } from "@/lib/schemas";
 import { conTimeout, crearSSE } from "@/lib/sse";
@@ -201,47 +201,17 @@ export async function POST(req: Request) {
       const mercado = await mercadoP;
       avanzar(0, "Comparando precios y armando tu recomendación…");
 
-      /* ── Insights + comparador del cliente en paralelo ── */
+      /* ── Insights ── */
       log(mercado ? "Comparando precios contra el mercado…" : "Calculando puntuaciones…");
       log("Generando puntuaciones, pros y contras según el contexto…");
-      log("Preparando el comparador “Así lo vería tu cliente”…");
-
-      const insightsP = generarInsights(productos, mercado, ctx, conTimeout(signal, TIEMPO_INSIGHTS))
-        .then((ins) => {
-          emit({ tipo: "insights", insights: ins });
-          log("Insights listos.", "ok");
-          avanzar(0.2, "Recomendación lista");
-          return ins;
-        })
-        .catch((err) => {
-          log(`No se pudieron generar los insights: ${describeError(err)}`, "error");
-          avanzar(0.2, "Continuando sin puntuaciones");
-          return null;
-        });
-
-      const comparadorP = generarComparador(productos, ctx, conTimeout(signal, TIEMPO_INSIGHTS))
-        .then((c) => {
-          avanzar(0.1, "Vista del cliente lista");
-          return c;
-        })
-        .catch((err) => {
-          log(`No se pudo preparar el comparador del cliente: ${describeError(err)}`, "warn");
-          avanzar(0.1, "Finalizando");
-          return null;
-        });
-
-      const [insights, comparador] = await Promise.all([insightsP, comparadorP]);
-      if (comparador) {
-        if (insights) {
-          const porId = new Map(insights.productos.map((x) => [x.id, x]));
-          comparador.catalogo = comparador.catalogo.map((c) => {
-            const x = porId.get(c.id);
-            return x ? { ...c, puntuacionBase: x.puntuacion, pros: x.pros.slice(0, 3), idealPara: x.idealPara } : c;
-          });
-        }
-        emit({ tipo: "comparador", config: comparador });
-        log("Comparador del cliente listo.", "ok");
+      try {
+        const ins = await generarInsights(productos, mercado, ctx, conTimeout(signal, TIEMPO_INSIGHTS));
+        emit({ tipo: "insights", insights: ins });
+        log("Insights listos.", "ok");
+      } catch (err) {
+        log(`No se pudieron generar los insights: ${describeError(err)}`, "error");
       }
+      avanzar(0.3, "Recomendación lista");
 
       const segundos = Math.round((Date.now() - inicio) / 100) / 10;
       log(`Análisis completo en ${segundos} s.`, "ok");

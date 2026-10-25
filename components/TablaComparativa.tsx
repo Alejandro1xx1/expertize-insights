@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { formatoMoneda } from "@/lib/format";
 import { atributo, mejores, norm, numeroDe, reglaMejor } from "@/lib/numeros";
 import { SERIES } from "@/lib/paleta";
@@ -105,7 +106,7 @@ export default function TablaComparativa({
               {colores[p.id] !== undefined && <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: SERIES[colores[p.id]] }} />}
               <span className="truncate">{p.nombre}</span>
               <button type="button" onClick={() => quitar(p.id)} aria-label={`Quitar ${p.nombre}`} className="rounded px-1.5 text-gris hover:bg-white hover:text-tinta">
-                ✕
+                <X className="h-3.5 w-3.5" strokeWidth={1.5} />
               </button>
             </span>
           ))}

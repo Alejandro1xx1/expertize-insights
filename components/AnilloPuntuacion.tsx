@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+/** Las puntuaciones van en tinta; las bajas se atenúan. El rojo queda para el acento. */
 export function colorPuntuacion(v: number): string {
-  if (v >= 75) return "#1F7A45";
-  if (v >= 50) return "#111214";
-  return "#C8102E";
+  return v >= 50 ? "#141414" : "#6a675f";
 }
 
 /** Anillo que se llena animado hasta la puntuación (0–100). */
@@ -28,13 +27,13 @@ export default function AnilloPuntuacion({ valor, tamaño = 84, oscuro = false }
     return () => cancelAnimationFrame(raf);
   }, [valor, v]);
 
-  const color = oscuro ? (v >= 75 ? "#ffffff" : v >= 50 ? "#d4d6d9" : "#ff5a6e") : colorPuntuacion(v);
+  const color = oscuro ? (v >= 50 ? "#ffffff" : "#a9a8a4") : colorPuntuacion(v);
   return (
     <div className="relative shrink-0" style={{ width: tamaño, height: tamaño }} title="Puntuación según el contexto del cliente">
       <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-        <circle cx="18" cy="18" r={r} fill="none" stroke={oscuro ? "rgba(255,255,255,.15)" : "#e8e8e4"} strokeWidth="2.2" />
+        <circle cx="18" cy="18" r={r} fill="none" stroke={oscuro ? "rgba(255,255,255,.15)" : "#e7e4de"} strokeWidth="1.6" />
         {valor !== null && (
-          <circle cx="18" cy="18" r={r} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - mostrado / 100)} />
+          <circle cx="18" cy="18" r={r} fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - mostrado / 100)} />
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">

@@ -10,7 +10,7 @@ Herramienta de ventas de **carros** para usar **en vivo frente a prospectos** (c
 - "Ideal para": perfil de comprador de cada producto.
 - Preguntas que se hace el cliente antes de comprar.
 - Investigación de mercado de la ciudad: rangos de precio, factores de decisión y tendencias, con fuentes.
-- **"Así lo vería tu cliente"**: un comparador para el comprador final, con tu marca y tu color, que puedes descargar como JSON y reutilizar.
+- **Atención y seguimiento**: cada análisis queda ligado a un asesor y a un cliente, se guarda solo y se retoma desde **Clientes**.
 
 ---
 
@@ -71,13 +71,24 @@ Al hacer clic en cualquier tarjeta se abre la **vista previa**: carrusel de foto
 ### Coherencia de los datos
 Antes de mostrar un carro, la app revisa y corrige: año válido, kilometraje lógico (y que cuadre con el año), precio dentro de un rango razonable ("98 millones" → $98.000.000), nombres de campos estándar y carros duplicados entre fuentes. Lo que no cuadra se marca con 🔎 "Datos a revisar" en la vista previa.
 
+### Flujo de la atención
+1. **Inicio:** se elige el **asesor de venta** (se crean en Admin; el dispositivo recuerda el último usado) y se escriben los **datos del cliente**: nombre (obligatorio), teléfono y correo (opcionales). Si se deja teléfono o correo, es obligatorio marcar que el cliente autorizó el tratamiento de sus datos (Ley 1581 de 2012). **Empezar** se activa solo con asesor y nombre.
+2. **Perfil y vehículos:** el formulario de carros, perfil del cliente y ciudad. Arriba se ve "Asesor · Cliente · Guardado hh:mm".
+3. **Análisis** con el carro recorriendo la pista.
+4. **Resultados**, y al final **Seguimiento**: etapa (Perfilando, Analizado, Seguimiento, Negociación, Venta cerrada, No compró) y notas.
+
+Todo se **guarda automáticamente** (sin botón): datos del cliente, perfil, ciudad, enlaces, resultados, etapa, notas y fechas. Para empezar otra atención se toca el logo TORQUE o **Inicio**.
+
 ### Pantallas
 | Ruta | Para qué |
 |---|---|
 | `/login` | Contraseña de acceso (protege toda la app). |
-| `/` | Entrada → procesamiento en vivo → insights → "Así lo vería tu cliente". |
-| `/admin` | Genera y descarga la caché del mercado de carros (Medellín, Bogotá, Cali, Barranquilla). |
-| `/comparador` | Abre un comparador guardado (el JSON que descargaste) para mostrarlo de nuevo a otro cliente. |
+| `/` | Inicio de la atención → perfil y vehículos → análisis → resultados y seguimiento. Con `?atencion=…` retoma una atención guardada. |
+| `/clientes` | Todas las atenciones con buscador y filtros por asesor, etapa y fecha. Al abrir una se retoma donde quedó. |
+| `/admin` | **Asesores** (crear, editar, activar/desactivar) y **Datos de mercado** (caché por ciudad). |
+
+### Sistema visual
+Minimalista y sobrio: negro profundo, blancos y grises cálidos, y un solo acento (rojo TORQUE) para la acción principal, los estados activos y los datos destacados. Títulos en Archivo, textos en Inter, cifras tabulares, íconos de línea Lucide. Colores, radios, sombras, tipografía y tiempos de transición están definidos como variables en `app/globals.css`.
 
 ---
 
@@ -110,6 +121,14 @@ Luego presiona **Deploy**. En 1 o 2 minutos tendrás una dirección como `https:
 **¿Y si después quiero cambiarlas?** Entra al proyecto en Vercel → **Settings** → **Environment Variables**, edita el valor y guarda. Después ve a **Deployments**, abre el menú `⋯` del último despliegue y elige **Redeploy**: los cambios solo se aplican al volver a desplegar. Si cambias `APP_PASSWORD`, todas las sesiones abiertas se cierran.
 
 > Nunca escribas las claves dentro del código ni en GitHub. El archivo `.env.example` solo muestra los nombres.
+
+### Paso C2: conectar la base de datos (para guardar clientes y asesores)
+Sin este paso la app funciona, pero lo guardado se borra cuando Vercel reinicia el servidor (verás el aviso "Guardado temporal").
+1. En Vercel, abre el proyecto → pestaña **Storage** → **Create Database** (o **Connect Database**).
+2. Elige **Upstash** → **Redis** (plan gratuito) → región **Washington, D.C. (us-east-1)** o la más cercana → **Create**.
+3. Cuando pregunte a qué proyecto conectarla, elige este proyecto y deja marcados todos los entornos → **Connect**. Vercel agrega solo las variables (`KV_REST_API_URL` y `KV_REST_API_TOKEN`); no tienes que copiar nada.
+4. Ve a **Deployments** → **⋯** del último → **Redeploy**.
+5. Entra a **Admin → Asesores** y crea a tus asesores. Desde ahí, todo queda guardado de forma permanente.
 
 ### Paso D: probar
 Abre la dirección de Vercel, escribe tu contraseña y haz un análisis de prueba con 2 enlaces.
@@ -158,16 +177,7 @@ Si usas una ciudad sin archivo de caché, la app la investiga en vivo y la guard
 
 ---
 
-## 5. El comparador "Así lo vería tu cliente"
-
-- Se genera automáticamente con los productos del análisis: tiene preguntas guiadas (presupuesto, uso, preferencias) y muestra los resultados ordenados por coincidencia, con fotos y una comparación lado a lado.
-- Desde la pantalla puedes cambiar **el nombre de la marca, el color principal y el logo** (una URL de imagen).
-- **⤓ Descargar JSON** guarda toda la configuración: marca, colores, preguntas, reglas de puntuación y catálogo. Para reutilizarla, entra a `/comparador` y carga ese archivo.
-- Reglas de puntuación (en el JSON, bajo `reglas`): se parte de la puntuación del análisis, se suman los puntos de cada respuesta (de −20 a +20 por producto), se agrega un bono si el producto está dentro del presupuesto y se resta una penalización por cada 1% que lo supere. El resultado se limita de 0 a 100.
-
----
-
-## 6. Para desarrolladores
+## 5. Para desarrolladores
 
 ```bash
 npm install
@@ -180,8 +190,9 @@ Estructura:
 ```
 app/
   page.tsx               Pantalla principal (componente App)
-  login/, admin/, comparador/
-  api/process/route.ts   Pipeline principal (SSE): enlaces ∥ mercado → insights + comparador
+  login/, admin/, clientes/
+  api/process/route.ts   Pipeline principal (SSE): enlaces ∥ mercado → insights
+  api/asesores, api/clientes   Asesores y atenciones (guardado automático)
   api/market/route.ts    Investigación de mercado (usada por /admin)
   api/login, api/logout  Sesión por cookie
 proxy.ts                 Protección con contraseña (en Next.js 16, "middleware" se llama "proxy")
@@ -190,9 +201,11 @@ lib/
   extract.ts             Extracción de productos + verificación de fotos y precios
   hints.ts               Lectura directa del HTML (og:image, JSON-LD) como pistas
   market.ts              Caché (repositorio → memoria → en vivo)
-  insights.ts            Puntuaciones, precio vs. mercado y comparador
+  insights.ts            Puntuaciones, precio vs. mercado
+  db.ts, crm.ts          Base de datos (Upstash Redis o memoria) y esquemas de asesores/atenciones
+  coherencia.ts          Revisión de datos (año, km, precio, duplicados)
   schemas.ts             Esquemas zod y tipos
-components/              Interfaz (terminal, tarjetas, tabla, comparador…)
+components/              Interfaz (inicio, formulario, tarjetas, vista previa, gráficas…)
 data/market-cache/       JSON de mercado precalculados
 ```
 

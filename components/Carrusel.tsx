@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import FotoProducto from "./FotoProducto";
 
 /**
@@ -30,7 +31,7 @@ export default function Carrusel({ imagenes, alt, className = "" }: { imagenes: 
       aria-roledescription="carrusel"
       aria-label={`Fotos de ${alt}`}
     >
-      <div className="relative overflow-hidden rounded-[12px]">
+      <div className="relative overflow-hidden rounded-[var(--radius-lg)]">
         <FotoProducto
           key={total ? imagenes[i] : "sin-foto"}
           imagenes={total ? [imagenes[i]] : []}
@@ -45,17 +46,17 @@ export default function Carrusel({ imagenes, alt, className = "" }: { imagenes: 
               type="button"
               onClick={() => ir(-1)}
               aria-label="Foto anterior"
-              className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-lg text-tinta shadow-lg transition-opacity hover:bg-white sm:opacity-0 sm:group-hover:opacity-100"
+              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-tinta shadow-2 transition-opacity duration-200 hover:bg-white sm:opacity-0 sm:group-hover:opacity-100"
             >
-              ‹
+              <ChevronLeft className="h-5 w-5" strokeWidth={1.5} />
             </button>
             <button
               type="button"
               onClick={() => ir(1)}
               aria-label="Foto siguiente"
-              className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-lg text-tinta shadow-lg transition-opacity hover:bg-white sm:opacity-0 sm:group-hover:opacity-100"
+              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-tinta shadow-2 transition-opacity duration-200 hover:bg-white sm:opacity-0 sm:group-hover:opacity-100"
             >
-              ›
+              <ChevronRight className="h-5 w-5" strokeWidth={1.5} />
             </button>
             <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/45 px-2.5 py-1.5">
               {imagenes.map((_, k) => (
@@ -68,8 +69,8 @@ export default function Carrusel({ imagenes, alt, className = "" }: { imagenes: 
                 />
               ))}
             </div>
-            <div className="cifra absolute right-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-xs text-white">
-              📷 {i + 1}/{total}
+            <div className="cifra absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-xs text-white backdrop-blur-sm">
+              <Camera className="h-3.5 w-3.5" strokeWidth={1.75} /> {i + 1}/{total}
             </div>
           </>
         )}

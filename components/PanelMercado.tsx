@@ -45,7 +45,7 @@ export default function PanelMercado({ mercado }: { mercado: Mercado }) {
                     <div className="text-xs text-gris">
                       {r.fuente && /^https?:/.test(r.fuente) ? (
                         <a className="hover:text-rojo" href={r.fuente} target="_blank" rel="noreferrer">
-                          {dominio(r.fuente)} ↗
+                          {dominio(r.fuente)}
                         </a>
                       ) : (
                         (r.fuente ?? "Fuente: Sin dato")
@@ -116,7 +116,7 @@ export default function PanelMercado({ mercado }: { mercado: Mercado }) {
           <ul className="space-y-3">
             {mercado.tendencias.map((t, i) => (
               <li key={i} className="flex gap-4 text-sm">
-                <span className="text-rojo">↗</span>
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-tinta" />
                 <span>
                   <strong className="font-semibold">{t.tendencia}.</strong> <span className="text-gris">{t.detalle}</span>
                 </span>

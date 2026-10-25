@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import EscenaHero from "@/components/EscenaHero";
+import PortadaFoto from "@/components/PortadaFoto";
 import Marca from "@/components/Marca";
 
 function Formulario() {
@@ -35,7 +35,7 @@ function Formulario() {
   }
 
   return (
-    <form onSubmit={entrar} className="tarjeta entrar w-full max-w-sm space-y-6 p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,.6)]">
+    <form onSubmit={entrar} className="entrar w-full space-y-7 rounded-[var(--radius-xl)] bg-white p-8 shadow-3 sm:p-10">
       <Marca />
       <div>
         <h1 className="titulo text-2xl">Acceso privado</h1>
@@ -51,7 +51,7 @@ function Formulario() {
         aria-label="Contraseña"
       />
       {error && <p className="text-sm text-rojo">{error}</p>}
-      <button type="submit" disabled={cargando || !password} className="boton-principal w-full py-4 text-xs">
+      <button type="submit" disabled={cargando || !password} className="btn btn-primario btn-lg w-full">
         {cargando ? "Verificando…" : "Entrar"}
       </button>
     </form>
@@ -61,8 +61,8 @@ function Formulario() {
 export default function LoginPage() {
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-negro px-4">
-      <EscenaHero compacta />
-      <div className="relative z-10 w-full max-w-sm">
+      <PortadaFoto />
+      <div className="relative z-10 w-full max-w-md">
         <Suspense>
           <Formulario />
         </Suspense>

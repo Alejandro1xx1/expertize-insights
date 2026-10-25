@@ -1,7 +1,5 @@
 import {
   InsightsSchema,
-  PreguntasComparadorSchema,
-  type ComparadorConfig,
   type Insights,
   type InsightProducto,
   type Mercado,
@@ -113,85 +111,5 @@ ${mercadoParaModelo(mercado)}`,
     veredicto: data.veredicto,
     productos: productosInsight,
     preguntasCliente: data.preguntasCliente,
-  };
-}
-
-function redondearPaso(v: number, paso: number, hacia: "abajo" | "arriba"): number {
-  return (hacia === "abajo" ? Math.floor(v / paso) : Math.ceil(v / paso)) * paso;
-}
-
-export async function generarComparador(
-  productos: Producto[],
-  ctx: Contexto,
-  signal: AbortSignal,
-): Promise<ComparadorConfig> {
-  const preguntas = await parseStructured({
-    system: `Diseñas comparadores interactivos para compradores finales de carros en Colombia. Respondes en español, tono cercano (tú).
-
-Crea 3 o 4 preguntas guiadas de opción múltiple sobre USO y PREFERENCIAS del carro (no sobre presupuesto, eso ya existe). Ejemplos de temas: uso principal (ciudad, carretera, familia, trabajo), tipo de carrocería preferida, transmisión, prioridad (consumo, espacio, potencia, tecnología, lujo), tolerancia al kilometraje. Cada pregunta tiene 2 a 4 opciones. Para cada opción, asigna "puntos" entre -20 y 20 a CADA producto (por id) según qué tan bien encaja con esa respuesta, basándote SOLO en los atributos dados. Si un atributo no está, usa 0 para ese producto.
-"titulo": título atractivo del comparador (ej. "Encuentra tu próximo carro"). "subtitulo": una frase.
-Ids de preguntas y opciones: cortos, en minúsculas y sin espacios.`,
-    prompt: `Contexto del vendedor: ${ctx.mensaje || "(sin contexto)"} · Ciudad: ${ctx.ciudad || "(sin ciudad)"}
-
-Productos:
-${productosParaModelo(productos)}`,
-    schema: PreguntasComparadorSchema,
-    signal,
-  });
-
-  const ids = new Set(productos.map((p) => p.id));
-  const precios = productos.map((p) => p.precio).filter((x): x is number => x !== null && x > 0);
-  const moneda = productos.find((p) => p.moneda)?.moneda ?? "COP";
-  const paso = precios.length && Math.max(...precios) > 10_000_000 ? 1_000_000 : precios.length && Math.max(...precios) > 100_000 ? 50_000 : 1;
-  const min = precios.length ? redondearPaso(Math.min(...precios) * 0.7, paso, "abajo") : 0;
-  const max = precios.length ? redondearPaso(Math.max(...precios) * 1.3, paso, "arriba") : 0;
-
-  return {
-    version: 1,
-    marca: { nombre: "Mi Concesionario", colorPrincipal: "#C8102E", logoUrl: null, eslogan: null },
-    titulo: preguntas.titulo,
-    subtitulo: preguntas.subtitulo,
-    preguntas: [
-      ...(precios.length
-        ? [
-            {
-              tipo: "presupuesto" as const,
-              id: "presupuesto",
-              texto: "¿Cuál es tu presupuesto máximo?",
-              ayuda: "Mueve la barra hasta el valor que te sientes cómodo pagando.",
-              min,
-              max,
-              paso,
-              moneda,
-            },
-          ]
-        : []),
-      ...preguntas.preguntas.map((q) => ({
-        tipo: "opcion" as const,
-        id: q.id,
-        texto: q.texto,
-        ayuda: q.ayuda,
-        opciones: q.opciones.map((o) => ({
-          id: o.id,
-          etiqueta: o.etiqueta,
-          puntos: o.puntos
-            .filter((x) => ids.has(x.productoId))
-            .map((x) => ({ productoId: x.productoId, puntos: Math.max(-20, Math.min(20, Math.round(x.puntos))) })),
-        })),
-      })),
-    ],
-    reglas: { bonoDentroPresupuesto: 10, penalizacionPorPorcentajeExcedido: 2, penalizacionMaxima: 40 },
-    catalogo: productos.map((p) => ({
-      id: p.id,
-      nombre: p.nombre,
-      precio: p.precio,
-      moneda: p.moneda,
-      imagenes: p.imagenes,
-      atributos: p.atributos,
-      enlace: p.enlace,
-      puntuacionBase: 50,
-      pros: [],
-      idealPara: null,
-    })),
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AlertTriangle, ArrowLeft, ArrowRight, BarChart3, Check, ExternalLink, ListChecks, Scale, ScanSearch, User, X } from "lucide-react";
 import { formatoMoneda } from "@/lib/format";
 import { marcaDe } from "@/lib/numeros";
 import { ROJO } from "@/lib/paleta";
@@ -11,7 +12,7 @@ import Fuente, { SinDato } from "./Fuente";
 import Radar from "./graficas/Radar";
 import Icono from "./Iconos";
 import InsigniaMercado from "./InsigniaMercado";
-import { medalla, specsClave } from "./TarjetaCarro";
+import { puesto, specsClave } from "./TarjetaCarro";
 
 /** Vista previa de un carro: carrusel de fotos, datos, insights y radar. Se navega entre carros. */
 export default function VistaPrevia({
@@ -54,39 +55,39 @@ export default function VistaPrevia({
   const siguiente = productos[posicion + 1];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-6" onClick={onCerrar} role="dialog" aria-modal="true" aria-label={producto.nombre}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={onCerrar} role="dialog" aria-modal="true" aria-label={producto.nombre}>
       <div
-        className="entrar relative flex max-h-[94dvh] w-full max-w-6xl flex-col overflow-hidden rounded-t-[18px] bg-white sm:rounded-[18px]"
+        className="entrar relative flex max-h-[94dvh] w-full max-w-6xl flex-col overflow-hidden rounded-t-[var(--radius-xl)] bg-white shadow-3 sm:rounded-[var(--radius-xl)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* barra superior */}
         <div className="flex items-center justify-between gap-3 border-b border-linea px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-2 text-sm">
-            <span className="text-lg">{medalla(posicion)}</span>
-            <span className="cifra font-bold">#{posicion + 1}</span>
+            <span className="cifra rounded-full bg-tinta px-2.5 py-1 text-xs font-semibold text-white">{puesto(posicion)}</span>
             <span className="text-gris">de {productos.length}</span>
+            {posicion === 0 && insight && <span className="rounded-full bg-rojo px-2.5 py-1 text-[0.68rem] font-semibold text-white">Recomendado</span>}
           </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
               disabled={!anterior}
               onClick={() => anterior && onCambiar(anterior.id)}
-              className="rounded-md px-3 py-2 text-sm font-medium hover:bg-niebla disabled:opacity-30"
+              className="btn btn-fantasma btn-sm disabled:opacity-30"
               aria-label="Carro anterior"
             >
-              ← <span className="hidden sm:inline">Anterior</span>
+              <ArrowLeft className="h-4 w-4" strokeWidth={1.5} /> <span className="hidden sm:inline">Anterior</span>
             </button>
             <button
               type="button"
               disabled={!siguiente}
               onClick={() => siguiente && onCambiar(siguiente.id)}
-              className="rounded-md px-3 py-2 text-sm font-medium hover:bg-niebla disabled:opacity-30"
+              className="btn btn-fantasma btn-sm disabled:opacity-30"
               aria-label="Carro siguiente"
             >
-              <span className="hidden sm:inline">Siguiente</span> →
+              <span className="hidden sm:inline">Siguiente</span> <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
             </button>
-            <button type="button" onClick={onCerrar} className="ml-1 rounded-md px-3 py-2 text-lg leading-none hover:bg-niebla" aria-label="Cerrar">
-              ✕
+            <button type="button" onClick={onCerrar} className="btn btn-fantasma btn-sm ml-1" aria-label="Cerrar">
+              <X className="h-5 w-5" strokeWidth={1.5} />
             </button>
           </div>
         </div>
@@ -101,13 +102,13 @@ export default function VistaPrevia({
                   <div className="etiqueta text-gris">{marcaDe(producto.nombre)}</div>
                   <Fuente fuente={producto.fuente} />
                 </div>
-                <h2 className="titulo mt-2 text-2xl sm:text-3xl">{producto.nombre}</h2>
-                {insight?.titular && <p className="mt-3 border-l-4 border-rojo pl-3 font-medium leading-snug">✨ {insight.titular}</p>}
+                <h2 className="titulo mt-2 text-2xl sm:text-[2rem]">{producto.nombre}</h2>
+                {insight?.titular && <p className="mt-3 border-l-2 border-rojo pl-3 font-medium leading-snug text-tinta">{insight.titular}</p>}
               </div>
 
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <div className="cifra text-3xl font-bold sm:text-4xl">
+                  <div className="cifra text-3xl font-semibold sm:text-4xl">
                     {producto.precio !== null ? formatoMoneda(producto.precio, producto.moneda) : <SinDato />}
                   </div>
                   <div className="mt-2">
@@ -119,9 +120,9 @@ export default function VistaPrevia({
 
               <div className="grid grid-cols-3 gap-2">
                 {specs.map((s) => (
-                  <div key={s.clave} className="rounded-[12px] bg-niebla p-3 text-center">
-                    <Icono nombre={s.clave} className="mx-auto h-5 w-5 text-rojo" />
-                    <div className="cifra mt-1.5 text-sm font-bold leading-tight">{s.valor}</div>
+                  <div key={s.clave} className="rounded-[var(--radius-md)] border border-linea p-3 text-center">
+                    <Icono nombre={s.clave} className="mx-auto h-4 w-4 text-gris-claro" />
+                    <div className="cifra mt-1.5 text-sm font-semibold leading-tight">{s.valor}</div>
                     <div className="mt-0.5 text-[0.68rem] text-gris">{s.clave}</div>
                   </div>
                 ))}
@@ -129,16 +130,16 @@ export default function VistaPrevia({
 
               <div className="flex flex-wrap gap-2">
                 {producto.enlace && (
-                  <a href={producto.enlace} target="_blank" rel="noreferrer" className="etiqueta rounded-[10px] bg-tinta px-5 py-3 !text-[0.62rem] text-white hover:bg-black">
-                    🔗 Ver publicación
+                  <a href={producto.enlace} target="_blank" rel="noreferrer" className="btn btn-oscuro">
+                    <ExternalLink className="h-4 w-4" strokeWidth={1.5} /> Ver publicación
                   </a>
                 )}
                 <button
                   type="button"
                   onClick={() => onComparar(producto.id)}
-                  className="boton-borde px-5 py-3 text-[0.62rem] text-tinta hover:bg-tinta hover:text-white"
+                  className="btn btn-secundario"
                 >
-                  ⚖️ Comparar
+                  <Scale className="h-4 w-4" strokeWidth={1.5} /> Comparar
                 </button>
               </div>
             </div>
@@ -147,23 +148,23 @@ export default function VistaPrevia({
           <div className="grid gap-4 border-t border-linea p-4 sm:p-6 lg:grid-cols-3">
             {insight && (
               <>
-                <section className="rounded-[14px] bg-niebla p-5">
-                  <h3 className="cifra font-bold">👤 Perfil ideal</h3>
+                <section className="rounded-[var(--radius-lg)] bg-niebla p-5">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold"><User className="h-4 w-4 text-gris" strokeWidth={1.5} /> Perfil ideal</h3>
                   <p className="mt-2 text-sm leading-relaxed text-gris">{insight.idealPara}</p>
                 </section>
-                <section className="rounded-[14px] border border-linea p-5">
-                  <h3 className="cifra font-bold text-verde">✅ A favor</h3>
-                  <ul className="mt-2 space-y-1.5 text-sm">
+                <section className="rounded-[var(--radius-lg)] border border-linea p-5">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold"><Check className="h-4 w-4 text-verde" strokeWidth={2} /> A favor</h3>
+                  <ul className="mt-3 space-y-2 text-sm text-gris">
                     {insight.pros.map((p) => (
-                      <li key={p}>• {p}</li>
+                      <li key={p}>{p}</li>
                     ))}
                   </ul>
                 </section>
-                <section className="rounded-[14px] border border-linea p-5">
-                  <h3 className="cifra font-bold text-rojo">⚠️ A tener en cuenta</h3>
-                  <ul className="mt-2 space-y-1.5 text-sm">
+                <section className="rounded-[var(--radius-lg)] border border-linea p-5">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-champan" strokeWidth={1.75} /> A tener en cuenta</h3>
+                  <ul className="mt-3 space-y-2 text-sm text-gris">
                     {insight.contras.map((c) => (
-                      <li key={c}>• {c}</li>
+                      <li key={c}>{c}</li>
                     ))}
                   </ul>
                 </section>
@@ -174,7 +175,7 @@ export default function VistaPrevia({
           <div className="grid gap-6 border-t border-linea p-4 sm:p-6 lg:grid-cols-2">
             <section>
               <div className="flex items-center justify-between">
-                <h3 className="cifra font-bold">📋 Especificaciones</h3>
+                <h3 className="flex items-center gap-2 text-sm font-semibold"><ListChecks className="h-4 w-4 text-gris" strokeWidth={1.5} /> Especificaciones</h3>
                 {producto.atributos.length > 8 && (
                   <button type="button" onClick={() => setTodas((t) => !t)} className="text-xs font-semibold text-rojo">
                     {todas ? "Ver menos" : `Ver todas (${producto.atributos.length})`}
@@ -193,8 +194,8 @@ export default function VistaPrevia({
                 ))}
               </dl>
               {producto.alertas.length > 0 && (
-                <div className="mt-4 rounded-[10px] border border-champan/40 bg-champan/10 p-3 text-xs text-champan-oscuro">
-                  <div className="font-semibold">🔎 Datos a revisar</div>
+                <div className="mt-4 rounded-[var(--radius-md)] border border-champan/30 bg-champan/[.06] p-3 text-xs text-champan-oscuro">
+                  <div className="flex items-center gap-1.5 font-semibold"><ScanSearch className="h-3.5 w-3.5" strokeWidth={1.75} /> Datos a revisar</div>
                   <ul className="mt-1 space-y-0.5">
                     {producto.alertas.map((a) => (
                       <li key={a}>• {a}</li>
@@ -205,7 +206,7 @@ export default function VistaPrevia({
             </section>
             {insight && (
               <section>
-                <h3 className="cifra font-bold">📊 Análisis de características</h3>
+                <h3 className="flex items-center gap-2 text-sm font-semibold"><BarChart3 className="h-4 w-4 text-gris" strokeWidth={1.5} /> Análisis de características</h3>
                 <p className="text-xs text-gris">Evaluación estimada de 1 a 10.</p>
                 <Radar
                   ejes={DIMENSIONES.map((d) => d.label)}

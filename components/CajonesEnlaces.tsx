@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { AlertTriangle, Check, X } from "lucide-react";
 import { dominio } from "@/lib/format";
 
 const MAX = 12;
@@ -79,8 +80,8 @@ export default function CajonesEnlaces({ valor, onChange }: { valor: string[]; o
         return (
           <div
             key={i}
-            className={`entrar flex items-center gap-3 rounded-[10px] border bg-white px-3 py-2.5 transition-colors ${
-              valido ? "border-tinta/80" : lleno ? "border-rojo/60" : "border-dashed border-[#c9c9c4] focus-within:border-tinta"
+            className={`entrar flex items-center gap-3 rounded-[var(--radius-md)] border bg-white px-3 py-2.5 transition-colors duration-150 transition-colors ${
+              valido ? "border-tinta/80" : lleno ? "border-rojo/60" : "border-dashed border-linea-fuerte hover:border-gris-claro focus-within:border-tinta focus-within:shadow-[var(--foco)]"
             }`}
           >
             <span
@@ -108,15 +109,19 @@ export default function CajonesEnlaces({ valor, onChange }: { valor: string[]; o
                 }}
                 placeholder={i === 0 ? "Pega aquí el enlace del primer carro o del catálogo" : "Pega el siguiente carro…"}
                 aria-label={`Enlace ${i + 1}`}
-                className="w-full truncate bg-transparent py-0.5 text-[0.95rem] text-tinta outline-none placeholder:text-[#8b9097]"
+                className="w-full truncate bg-transparent py-0.5 text-[0.95rem] text-tinta outline-none placeholder:text-gris-claro"
               />
               {lleno && (
-                <div className={`text-[0.72rem] ${valido ? (sitioBloqueado(enlace) ? "text-champan-oscuro" : "text-verde") : "text-rojo"}`}>
-                  {!valido
-                    ? "No parece un enlace válido (debe empezar por https://)"
-                    : sitioBloqueado(enlace)
-                      ? `⚠ ${dominio(enlace)} suele bloquear la lectura automática. Si falla, usa “Pegar texto manualmente”.`
-                      : `✓ ${dominio(enlace)}`}
+                <div className={`mt-0.5 flex items-center gap-1 text-[0.72rem] ${valido ? (sitioBloqueado(enlace) ? "text-champan-oscuro" : "text-verde") : "text-rojo"}`}>
+                  {valido && !sitioBloqueado(enlace) && <Check className="h-3 w-3 shrink-0" strokeWidth={2} />}
+                  {valido && sitioBloqueado(enlace) && <AlertTriangle className="h-3 w-3 shrink-0" strokeWidth={2} />}
+                  <span className="min-w-0">
+                    {!valido
+                      ? "No parece un enlace válido (debe empezar por https://)"
+                      : sitioBloqueado(enlace)
+                        ? `${dominio(enlace)} suele bloquear la lectura automática. Si falla, usa “Pegar texto manualmente”.`
+                        : dominio(enlace)}
+                  </span>
                 </div>
               )}
             </div>
@@ -127,7 +132,7 @@ export default function CajonesEnlaces({ valor, onChange }: { valor: string[]; o
                 aria-label={`Quitar enlace ${i + 1}`}
                 className="shrink-0 rounded-md px-2 py-1 text-gris hover:bg-niebla hover:text-tinta"
               >
-                ✕
+                <X className="h-4 w-4" strokeWidth={1.5} />
               </button>
             )}
           </div>

@@ -146,93 +146,6 @@ export type Insights = {
   preguntasCliente: InsightsModelo["preguntasCliente"];
 };
 
-/* ───────────── Comparador para el cliente final ───────────── */
-
-export const PreguntasComparadorSchema = z.object({
-  titulo: z.string(),
-  subtitulo: z.string(),
-  preguntas: z.array(
-    z.object({
-      id: z.string(),
-      texto: z.string(),
-      ayuda: z.string().nullable(),
-      opciones: z.array(
-        z.object({
-          id: z.string(),
-          etiqueta: z.string(),
-          puntos: z.array(z.object({ productoId: z.string(), puntos: z.number() })),
-        }),
-      ),
-    }),
-  ),
-});
-
-export type PreguntasComparador = z.infer<typeof PreguntasComparadorSchema>;
-
-/** Esquema del JSON descargable/reutilizable del comparador. */
-export const ComparadorConfigSchema = z.object({
-  version: z.literal(1),
-  marca: z.object({
-    nombre: z.string(),
-    colorPrincipal: z.string(),
-    logoUrl: z.string().nullable(),
-    eslogan: z.string().nullable(),
-  }),
-  titulo: z.string(),
-  subtitulo: z.string(),
-  preguntas: z.array(
-    z.discriminatedUnion("tipo", [
-      z.object({
-        tipo: z.literal("presupuesto"),
-        id: z.string(),
-        texto: z.string(),
-        ayuda: z.string().nullable(),
-        min: z.number(),
-        max: z.number(),
-        paso: z.number(),
-        moneda: z.string(),
-      }),
-      z.object({
-        tipo: z.literal("opcion"),
-        id: z.string(),
-        texto: z.string(),
-        ayuda: z.string().nullable(),
-        opciones: z.array(
-          z.object({
-            id: z.string(),
-            etiqueta: z.string(),
-            puntos: z.array(z.object({ productoId: z.string(), puntos: z.number() })),
-          }),
-        ),
-      }),
-    ]),
-  ),
-  reglas: z.object({
-    /** Bono si el precio está dentro del presupuesto. */
-    bonoDentroPresupuesto: z.number(),
-    /** Puntos que se restan por cada 1% que el precio supera el presupuesto. */
-    penalizacionPorPorcentajeExcedido: z.number(),
-    /** Máximo de puntos que se pueden restar por presupuesto. */
-    penalizacionMaxima: z.number(),
-  }),
-  catalogo: z.array(
-    z.object({
-      id: z.string(),
-      nombre: z.string(),
-      precio: z.number().nullable(),
-      moneda: z.string().nullable(),
-      imagenes: z.array(z.string()),
-      atributos: z.array(AtributoSchema),
-      enlace: z.string().nullable(),
-      puntuacionBase: z.number(),
-      pros: z.array(z.string()),
-      idealPara: z.string().nullable(),
-    }),
-  ),
-});
-
-export type ComparadorConfig = z.infer<typeof ComparadorConfigSchema>;
-
 /* ───────────── Eventos del streaming ───────────── */
 
 export type LogNivel = "info" | "ok" | "warn" | "error" | "dato";
@@ -244,6 +157,5 @@ export type EventoStream =
   | { tipo: "productos_listos"; total: number }
   | { tipo: "mercado"; mercado: Mercado }
   | { tipo: "insights"; insights: Insights }
-  | { tipo: "comparador"; config: ComparadorConfig }
   | { tipo: "error"; mensaje: string }
   | { tipo: "fin"; segundos: number };
